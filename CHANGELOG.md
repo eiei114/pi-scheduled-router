@@ -4,25 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning.
 
-## [0.1.2] - 2026-06-04
-
-### Changed
-
-- README and `docs/template-checklist.md` now follow the Pi OSS minimal-docs policy: `docs/` is optional, with explicit post-generation cleanup for template bootstrap docs.
-- Template bootstrap docs (`github-template.md`, `repository-settings.md`, `typescript.md`) are labeled for delete-or-merge after setup.
-
-## [0.1.1] - 2026-06-01
-
-### Changed
-
-- Publish workflow now supports npm publishing on merged package version bumps in addition to tags, releases, and manual dispatch.
-- Publish workflow now installs a current npm CLI so npm Trusted Publishing OIDC is supported.
-- CI and publish workflow commands no longer include literal trailing `\\n` text.
-
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] - 2026-06-07
 
 ### Added
 
-- Initial Pi package template.
-- Example extension, Agent Skill, prompt, and theme.
-- CI and npm Trusted Publishing workflow.
+- Initial release: time-slot-based model selection for Pi.
+- YAML configuration (`scheduled-router.yaml`) with project-local override.
+- Time slot matching: first-match-wins evaluation with `from` inclusive, `to` exclusive.
+- Day-spanning slot support (e.g. `22:00` → `02:00`).
+- Configurable IANA timezone (defaults to system local).
+- Required default model for uncovered time ranges.
+- Session-start automatic model selection (`session_start` hook).
+- Model-not-found fallback: notify + try default.
+- `/scheduled:status` command — show current time, matched slot, model.
+- `/scheduled:configure` command — guide for configuration via agent.
+- `scheduled_router_config` tool — read / status / validate / save YAML config.
+- CI pipeline with typecheck, 31 tests, and npm pack check.

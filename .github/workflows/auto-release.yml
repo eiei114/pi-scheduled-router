@@ -81,4 +81,4 @@ jobs:
           TAG="${{ steps.check.outputs.tag }}"
           gh workflow run publish.yml --ref "$TAG" -f ref="$TAG"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n

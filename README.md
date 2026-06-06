@@ -1,88 +1,124 @@
-# PACKAGE_DISPLAY_NAME
+# Pi Scheduled Router
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-[![Publish](https://github.com/OWNER/REPO/actions/workflows/publish.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/publish.yml)
-[![npm version](https://img.shields.io/npm/v/PACKAGE_NAME.svg)](https://www.npmjs.com/package/PACKAGE_NAME)
-[![npm downloads](https://img.shields.io/npm/dm/PACKAGE_NAME.svg)](https://www.npmjs.com/package/PACKAGE_NAME)
+[![CI](https://github.com/eiei114/pi-scheduled-router/actions/workflows/ci.yml/badge.svg)](https://github.com/eiei114/pi-scheduled-router/actions/workflows/ci.yml)
+[![Publish](https://github.com/eiei114/pi-scheduled-router/actions/workflows/publish.yml/badge.svg)](https://github.com/eiei114/pi-scheduled-router/actions/workflows/publish.yml)
+[![npm version](https://img.shields.io/npm/v/pi-scheduled-router.svg)](https://www.npmjs.com/package/pi-scheduled-router)
+[![npm downloads](https://img.shields.io/npm/dm/pi-scheduled-router.svg)](https://www.npmjs.com/package/pi-scheduled-router)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Pi package](https://img.shields.io/badge/pi-package-purple.svg)](https://pi.dev/packages)
 [![Trusted Publishing](https://img.shields.io/badge/npm-Trusted%20Publishing-blue.svg)](docs/release.md)
 
-> One-line pitch for this TypeScript-first Pi package.
+> Switch Pi's AI provider and model based on time of day — YAML time-slot configuration, session-start selection.
 
 ## What this is
 
-Briefly explain what this TypeScript-first package adds to Pi and who should use it.
+`pi-scheduled-router` is a Pi extension that selects an AI provider and model at session start based on the current time. Define time slots in a YAML config file and Pi picks the matching model automatically — morning light models, afternoon heavy lifters, night deep thinkers. No weighted balancing, no daily counts: just time → model.
+
+This router is **mutually exclusive** with `pi-weighted-model-router`. Install one or the other.
 
 ## Features
 
-- Feature 1
-- Feature 2
-- Feature 3
+- Time-slot-based provider/model selection at session start
+- YAML configuration (`scheduled-router.yaml`) with project-local override
+- Day-spanning slots (e.g. `22:00` → `02:00`)
+- Required default model for uncovered time ranges
+- First-match-wins slot evaluation
+- Configurable timezone
+- Install in user agent dir or per-project
 
 ## Install
 
-Install the published npm package with Pi:
-
 ```bash
-pi install npm:PACKAGE_NAME
+pi install npm:pi-scheduled-router
 ```
 
-Replace `PACKAGE_NAME` with the exact `name` from `package.json`.
-For a scoped npm package, keep the `npm:` prefix:
+Pin a specific version:
 
 ```bash
-pi install npm:@your-scope/your-pi-package
-```
-
-Pin a specific version when you want reproducible installs:
-
-```bash
-pi install npm:PACKAGE_NAME@0.1.0
+pi install npm:pi-scheduled-router@0.1.0
 ```
 
 Install into the current project instead of your user Pi settings:
 
 ```bash
-pi install npm:PACKAGE_NAME -l
+pi install npm:pi-scheduled-router -l
 ```
 
 Or install from GitHub:
 
 ```bash
-pi install git:github.com/OWNER/REPO
+pi install git:github.com/eiei114/pi-scheduled-router
 ```
 
 Try it without permanently installing:
 
 ```bash
-pi -e npm:PACKAGE_NAME
+pi -e npm:pi-scheduled-router
 ```
 
 ## Quick start
 
-Try this package locally:
+1. Install the package.
+2. Create `~/.pi/scheduled-router.yaml`:
 
-```bash
-pi -e .
+```yaml
+version: 1
+timezone: "Asia/Tokyo"
+default:
+  provider: deepseek
+  model: deepseek-v4-pro
+
+slots:
+  - from: "10:00"
+    to: "15:00"
+    provider: cursor
+    model: composer-2.5
+
+  - from: "15:00"
+    to: "24:00"
+    provider: openai-codex
+    model: gpt-5.4
 ```
 
-Then run:
+3. Start a new Pi session — the model is selected based on the current time.
+4. Run `/scheduled:status` to see current selection.
 
-```txt
-/your-command
-```
+Or use `/scheduled:configure` to set up time slots interactively with your agent.
+
+## Commands
+
+### `/scheduled:status`
+
+Show current time, matched slot, and selected model. No arguments.
+
+### `/scheduled:configure`
+
+Start a guided conversation with your agent to set up or modify the router's time slots. The agent will ask questions one at a time and save the configuration via the `scheduled_router_config` tool.
+
+## Tools
+
+### `scheduled_router_config`
+
+AI-facing tool for programmatic config management.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `action` | `"read" \| "status" \| "validate" \| "save"` | Operation to perform |
+| `configYaml` | `string` (optional) | Full YAML content (required for validate/save) |
+
+Actions:
+- `read` — return current YAML config content
+- `status` — show current time, matched slot, and model
+- `validate` — validate YAML config without saving
+- `save` — confirm with user, write to disk, reselect model
 
 ## Package contents
 
 | Path | Purpose |
 |---|---|
-| `extensions/` | Pi TypeScript extension entrypoints (`*.ts` and `index.ts`) |
-| `lib/` | Shared TypeScript helpers |
-| `skills/` | Agent Skills |
-| `prompts/` | Prompt templates |
-| `themes/` | Pi themes |
-| `docs/` | Optional supporting docs (usage, examples, release, ADRs) |
+| `extensions/` | Pi TypeScript extension entrypoint |
+| `lib/` | Shared TypeScript helpers (types, config, matcher) |
+| `docs/` | Optional supporting docs |
 
 ## Development
 
@@ -92,19 +128,6 @@ npm run ci
 ```
 
 ## Development flow
-
-Use this default flow when building a new Pi extension OSS project from this template:
-
-1. Create the Vault project notes under `4_Project/<ProjectName>/`.
-2. Add `CONTEXT.md`, `README.md`, `ROADMAP.md`, `Docs/`, `Issues/`, and `Progress/`.
-3. Write the PRD in `4_Project/<ProjectName>/Docs/`.
-4. Split approved tracer-bullet issues into `4_Project/<ProjectName>/Issues/`.
-5. Implement in the OSS repo.
-6. Run `npm run ci`, `npm test`, and `npm pack --dry-run`.
-7. Release with Trusted Publishing.
-8. Save release notes and follow-up decisions back to the Vault project.
-
-Short version:
 
 ```txt
 Vault notes -> PRD -> Issues -> implement -> ci/check -> release -> save learnings
@@ -121,31 +144,6 @@ git push
 
 See [`docs/release.md`](docs/release.md) for setup details.
 
-## Docs
-
-`docs/` is optional supporting documentation, not a fixed six-file set. README stays the GitHub/npm entrypoint; add `docs/*.md` only when they help users or maintainers.
-
-After creating a repository from this template:
-
-1. Follow [`docs/template-checklist.md`](docs/template-checklist.md) for setup.
-2. Run the **post-generation docs cleanup** in that checklist: delete or merge template bootstrap docs that no longer add project value.
-
-Useful docs to keep when they add value:
-
-- [`docs/examples.md`](docs/examples.md) — examples for extensions, skills, prompts, and themes
-- [`docs/release.md`](docs/release.md) — Trusted Publishing details (README Release summarizes the flow)
-- `docs/usage.md` — create when usage does not fit in README
-
-Optional maintainer guidance (not a public-user navigation target in mature repos):
-
-- [`docs/template-checklist.md`](docs/template-checklist.md)
-
-Template bootstrap docs to delete or merge after setup unless they still teach something project-specific:
-
-- `docs/github-template.md`
-- `docs/repository-settings.md`
-- `docs/typescript.md`
-
 ## Security
 
 Pi packages can execute code with your local permissions. Review extensions before installing third-party packages.
@@ -154,10 +152,10 @@ For vulnerability reporting, see [`SECURITY.md`](SECURITY.md).
 
 ## Links
 
-- npm: https://www.npmjs.com/package/PACKAGE_NAME
-- GitHub: https://github.com/OWNER/REPO
-- Issues: https://github.com/OWNER/REPO/issues
+- npm: https://www.npmjs.com/package/pi-scheduled-router
+- GitHub: https://github.com/eiei114/pi-scheduled-router
+- Issues: https://github.com/eiei114/pi-scheduled-router/issues
 
 ## License
 
-MIT\n
+MIT

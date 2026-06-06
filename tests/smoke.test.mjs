@@ -1,31 +1,20 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { validateConfig } from "../lib/config.ts";
+import { matchSlot } from "../lib/matcher.ts";
 
-const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
-const autoReleaseWorkflow = await readFile(new URL("../.github/workflows/auto-release.yml", import.meta.url), "utf8");
-const publishWorkflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+const VALID_CONFIG = {
+  version: 1,
+  default: { provider: "deepseek", model: "deepseek-v4-pro" },
+  slots: [{ from: "09:00", to: "17:00", provider: "openai-codex", model: "gpt-5.4" }],
+};
 
-test("package declares pi resources", () => {
-  assert.deepEqual(packageJson.pi.extensions, ["./extensions"]);
-  assert.deepEqual(packageJson.pi.skills, ["./skills"]);
-  assert.deepEqual(packageJson.pi.prompts, ["./prompts"]);
-  assert.deepEqual(packageJson.pi.themes, ["./themes"]);
-});
+test("scheduled-router: config validates and matcher runs", () => {
+  const validated = validateConfig(VALID_CONFIG);
+  assert.equal(validated.version, 1);
 
-test("package is discoverable as a Pi package", () => {
-  assert.ok(packageJson.keywords.includes("pi-package"));
-});
-
-test("package uses public publish config", () => {
-  assert.equal(packageJson.publishConfig.access, "public");
-});
-
-test("template includes npm release workflow handoff", () => {
-  assert.match(autoReleaseWorkflow, /actions:\s*write/);
-  assert.match(autoReleaseWorkflow, /contents:\s*write/);
-  assert.match(autoReleaseWorkflow, /gh workflow run publish\.yml/);
-  assert.match(publishWorkflow, /id-token:\s*write/);
-  assert.match(publishWorkflow, /workflow_dispatch:/);
-  assert.match(publishWorkflow, /npm publish --access public/);
+  const match = matchSlot(validated, new Date(2026, 0, 1, 12, 0));
+  assert.equal(match?.provider, "openai-codex");
+  assert.equal(match?.model, "gpt-5.4");
+  assert.equal(match?.matched, true);
 });
