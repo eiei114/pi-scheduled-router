@@ -1,22 +1,10 @@
-import { join } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { load as parseYaml } from "js-yaml";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
-import { CONFIG_VERSION, type RawConfig, type ScheduledRouterConfig, type TimeSlot } from "./types.ts";
+import { CONFIG_VERSION, type ScheduledRouterConfig, type TimeSlot } from "./types.ts";
+import { CONFIG_FILENAME, resolveConfigPath } from "./paths.ts";
 
-const CONFIG_FILENAME = "scheduled-router.yaml";
-
-/** Resolves the config path: project-local `.pi/` first, then agent dir. */
-export function resolveConfigPath(ctx: ExtensionContext): string | undefined {
-  const projectPath = join(ctx.cwd, ".pi", CONFIG_FILENAME);
-  if (existsSync(projectPath)) return projectPath;
-
-  const agentPath = join(getAgentDir(), CONFIG_FILENAME);
-  if (existsSync(agentPath)) return agentPath;
-
-  return undefined;
-}
+export { resolveConfigPath } from "./paths.ts";
 
 /** Attempts to load, parse, and validate the YAML config. Notifies on failure. */
 export function loadConfig(ctx: ExtensionContext): ScheduledRouterConfig | undefined {

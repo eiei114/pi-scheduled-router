@@ -1,5 +1,4 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { load as parseYaml, dump as stringifyYaml } from "js-yaml";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -7,30 +6,20 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { StringEnum } from "../lib/schema.ts";
 import { loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
+import { CONFIG_FILENAME, projectConfigPath } from "../lib/paths.ts";
 import { matchSlot, getNowInTimezone } from "../lib/matcher.ts";
 import type { MatchResult, ScheduledRouterConfig } from "../lib/types.ts";
 
 const STATUS_KEY = "scheduled-router";
-const CONFIG_FILENAME = "scheduled-router.yaml";
 
 export default function scheduledRouter(pi: ExtensionAPI) {
   let config: ScheduledRouterConfig | undefined;
   let currentMatch: MatchResult | undefined;
   let configPath: string | undefined;
 
-  function resolveConfigPathInner(ctx: ExtensionContext): string | undefined {
-    const projectPath = join(ctx.cwd, ".pi", CONFIG_FILENAME);
-    if (existsSync(projectPath)) return projectPath;
-
-    const agentPath = join(getAgentDir(), CONFIG_FILENAME);
-    if (existsSync(agentPath)) return agentPath;
-
-    return projectPath; // default write target
-  }
-
   async function ensureConfig(ctx: ExtensionContext): Promise<boolean> {
     if (config) return true;
-    configPath = resolveConfigPathInner(ctx);
+    configPath = resolveConfigPath(ctx) ?? projectConfigPath(ctx.cwd);
     config = loadConfig(ctx);
     return config !== undefined;
   }
