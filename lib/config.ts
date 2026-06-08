@@ -51,7 +51,7 @@ export function validateConfig(value: unknown): ScheduledRouterConfig {
   return { version: CONFIG_VERSION, timezone, default: defaultModel, slots };
 }
 
-/** Validates an optional IANA timezone name. */
+/** Validates an optional IANA timezone name. Returns `undefined` when the field is absent. Throws on invalid timezone. */
 function validateTimezoneField(value: unknown): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "string" || value.trim() === "") {
@@ -65,7 +65,7 @@ function validateTimezoneField(value: unknown): string | undefined {
   }
 }
 
-/** Validates the required `default` provider/model block. */
+/** Validates the required `default` provider/model block. Expects an object with non-empty `provider` and `model` strings. */
 function validateDefault(value: unknown): { provider: string; model: string } {
   if (!isRecord(value)) throw new Error("default must be an object.");
   return {
@@ -74,7 +74,7 @@ function validateDefault(value: unknown): { provider: string; model: string } {
   };
 }
 
-/** Validates the `slots` array and each time-slot entry. */
+/** Validates the `slots` array and each time-slot entry. Requires at least one slot. Each slot must have `from`, `to`, `provider`, and `model` fields in `HH:MM` format. */
 function validateSlots(value: unknown): TimeSlot[] {
   if (!Array.isArray(value)) throw new Error("slots must be an array.");
   if (value.length === 0) throw new Error("slots must include at least one entry.");
@@ -94,7 +94,7 @@ function validateSlots(value: unknown): TimeSlot[] {
   });
 }
 
-/** Ensures a time string is in `HH:MM` format with valid hour/minute ranges. */
+/** Ensures a time string is in `HH:MM` format with valid hour/minute ranges. `24:00` is allowed; `24:01`–`24:59` are rejected. */
 function validateHhMm(value: string, label: string): void {
   if (!/^\d{2}:\d{2}$/.test(value)) {
     throw new Error(`${label} must be HH:MM format, got "${value}".`);
@@ -107,10 +107,12 @@ function validateHhMm(value: string, label: string): void {
 
 // ── Helpers ──
 
+/** Type guard: returns `true` if `value` is a plain object (non-null, non-array). */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Asserts `value` is a non-empty string. Throws with `label` in the message on failure. */
 function nonEmptyString(value: unknown, label: string): string {
   if (typeof value !== "string" || value.trim() === "") {
     throw new Error(`${label} must be a non-empty string.`);
@@ -118,6 +120,7 @@ function nonEmptyString(value: unknown, label: string): string {
   return value;
 }
 
+/** Converts an unknown caught error to a string. Uses `Error.message` when available. */
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
