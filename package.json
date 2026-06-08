@@ -55,7 +55,7 @@
     "@earendil-works/pi-coding-agent": "latest",
     "@earendil-works/pi-tui": "latest",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.9.2",
     "typebox": "latest",
     "typescript": "^6.0.3"
   },
