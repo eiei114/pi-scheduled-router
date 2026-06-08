@@ -36,6 +36,7 @@ export function loadConfig(ctx: ExtensionContext): ScheduledRouterConfig | undef
 
 // ── Validation (exported for tool usage) ──
 
+/** Validates a parsed YAML value and returns a typed `ScheduledRouterConfig`. */
 export function validateConfig(value: unknown): ScheduledRouterConfig {
   if (!isRecord(value)) throw new Error("config must be an object.");
 
@@ -50,6 +51,7 @@ export function validateConfig(value: unknown): ScheduledRouterConfig {
   return { version: CONFIG_VERSION, timezone, default: defaultModel, slots };
 }
 
+/** Validates an optional IANA timezone name. */
 function validateTimezoneField(value: unknown): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "string" || value.trim() === "") {
@@ -63,6 +65,7 @@ function validateTimezoneField(value: unknown): string | undefined {
   }
 }
 
+/** Validates the required `default` provider/model block. */
 function validateDefault(value: unknown): { provider: string; model: string } {
   if (!isRecord(value)) throw new Error("default must be an object.");
   return {
@@ -71,6 +74,7 @@ function validateDefault(value: unknown): { provider: string; model: string } {
   };
 }
 
+/** Validates the `slots` array and each time-slot entry. */
 function validateSlots(value: unknown): TimeSlot[] {
   if (!Array.isArray(value)) throw new Error("slots must be an array.");
   if (value.length === 0) throw new Error("slots must include at least one entry.");
@@ -90,6 +94,7 @@ function validateSlots(value: unknown): TimeSlot[] {
   });
 }
 
+/** Ensures a time string is in `HH:MM` format with valid hour/minute ranges. */
 function validateHhMm(value: string, label: string): void {
   if (!/^\d{2}:\d{2}$/.test(value)) {
     throw new Error(`${label} must be HH:MM format, got "${value}".`);

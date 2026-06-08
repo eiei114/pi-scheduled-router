@@ -5,10 +5,12 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 
 export const CONFIG_FILENAME = "scheduled-router.yaml";
 
+/** Returns the project-local config path: `<cwd>/.pi/scheduled-router.yaml`. */
 export function projectConfigPath(cwd: string): string {
   return join(cwd, ".pi", CONFIG_FILENAME);
 }
 
+/** Returns the agent-directory config path: `<agentDir>/scheduled-router.yaml`. */
 export function agentConfigPath(): string {
   return join(getAgentDir(), CONFIG_FILENAME);
 }
