@@ -80,8 +80,8 @@ test("matchSlot boundary: to is exclusive", () => {
 
 // ── Day-spanning ──
 
-test("day-spanning matches late night (23:00)", () => {
-  const result = matchSlot(DAY_SPANNING_CONFIG, at(23, 0));
+test("day-spanning matches late night (23:30)", () => {
+  const result = matchSlot(DAY_SPANNING_CONFIG, at(23, 30));
   assert.equal(result?.matched, true);
   assert.equal(result?.provider, "cursor");
 });
@@ -92,8 +92,8 @@ test("day-spanning matches early morning (01:00)", () => {
   assert.equal(result?.provider, "cursor");
 });
 
-test("day-spanning does not match middle of day (12:00)", () => {
-  const result = matchSlot(DAY_SPANNING_CONFIG, at(12, 0));
+test("day-spanning does not match gap after range (03:00)", () => {
+  const result = matchSlot(DAY_SPANNING_CONFIG, at(3, 0));
   assert.equal(result?.matched, false);
   assert.equal(result?.provider, "deepseek"); // default
 });
@@ -144,4 +144,42 @@ test("getNowInTimezone returns a valid time for explicit timezone", () => {
   const result = getNowInTimezone("Asia/Tokyo");
   assert.ok(result.hours >= 0 && result.hours <= 23);
   assert.ok(result.minutes >= 0 && result.minutes <= 59);
+});
+
+// ── Timezone-aware matching ──
+
+test("matchSlot evaluates injected now in configured timezone", () => {
+  const tzConfig = {
+    version: 1,
+    timezone: "UTC",
+    default: { provider: "deepseek", model: "deepseek-v4-pro" },
+    slots: [{ from: "10:00", to: "15:00", provider: "cursor", model: "composer-2.5" }],
+  };
+
+  const inside = matchSlot(tzConfig, new Date("2026-01-01T11:00:00Z"));
+  assert.equal(inside?.matched, true);
+  assert.equal(inside?.provider, "cursor");
+
+  const outside = matchSlot(tzConfig, new Date("2026-01-01T09:00:00Z"));
+  assert.equal(outside?.matched, false);
+  assert.equal(outside?.provider, "deepseek");
+});
+
+test("matchSlot uses timezone offset when injected now differs from local", () => {
+  const tzConfig = {
+    version: 1,
+    timezone: "America/New_York",
+    default: { provider: "deepseek", model: "deepseek-v4-pro" },
+    slots: [{ from: "10:00", to: "15:00", provider: "cursor", model: "composer-2.5" }],
+  };
+
+  // 15:00 UTC = 10:00 EST (inclusive from)
+  const atStart = matchSlot(tzConfig, new Date("2026-01-01T15:00:00Z"));
+  assert.equal(atStart?.matched, true);
+  assert.equal(atStart?.provider, "cursor");
+
+  // 14:00 UTC = 09:00 EST (before slot)
+  const before = matchSlot(tzConfig, new Date("2026-01-01T14:00:00Z"));
+  assert.equal(before?.matched, false);
+  assert.equal(before?.provider, "deepseek");
 });
