@@ -168,7 +168,7 @@ test("loadConfig loads and validates a valid config file", async () => {
     await writeFile(join(projectConfigDir, "scheduled-router.yaml"), VALID_YAML);
 
     const { ctx, notifications } = mockCtx(projectRoot);
-    const result = loadConfig(ctx);
+    const result = await loadConfig(ctx);
     assert.equal(result?.version, 1);
     assert.equal(result?.default.provider, "deepseek");
     assert.equal(notifications.length, 0);
@@ -178,7 +178,7 @@ test("loadConfig loads and validates a valid config file", async () => {
 test("loadConfig notifies and returns undefined when config is missing", async () => {
   await withTempDirs(async ({ projectRoot }) => {
     const { ctx, notifications } = mockCtx(projectRoot);
-    const result = loadConfig(ctx);
+    const result = await loadConfig(ctx);
     assert.equal(result, undefined);
     assert.equal(notifications.length, 1);
     assert.match(notifications[0].msg, /config not found/i);
@@ -193,7 +193,7 @@ test("loadConfig notifies and returns undefined on YAML parse error", async () =
     await writeFile(join(projectConfigDir, "scheduled-router.yaml"), ":\n  bad: yaml: [");
 
     const { ctx, notifications } = mockCtx(projectRoot);
-    const result = loadConfig(ctx);
+    const result = await loadConfig(ctx);
     assert.equal(result, undefined);
     assert.equal(notifications.length, 1);
     assert.match(notifications[0].msg, /failed to parse YAML/i);
@@ -211,7 +211,7 @@ test("loadConfig notifies and returns undefined on schema violation", async () =
     );
 
     const { ctx, notifications } = mockCtx(projectRoot);
-    const result = loadConfig(ctx);
+    const result = await loadConfig(ctx);
     assert.equal(result, undefined);
     assert.equal(notifications.length, 1);
     assert.match(notifications[0].msg, /invalid config/i);
