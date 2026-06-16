@@ -62,18 +62,16 @@ The next releases stay on `0.1.x` for hardening, then consolidate into `0.2.0`.
 
 ## Known technical debt
 
-- **Release workflow token bug (suspected).** `.github/workflows/auto-release.yml` ends its
-  final step with `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n` — a **literal backslash-n**
-  present since the initial commit. This corrupts the token for the `gh release create` and
-  `gh workflow run` calls. npm publishes still succeed (the `v*.*.*` tag push triggers
-  `publish.yml` directly), but **GitHub Releases may not be getting created**. Needs
-  verification + fix. → See [SEED-5](#seed-5--audit-and-fix-auto-releaseyml-token-line).
+- **Release workflow token bug (fixed).** `.github/workflows/auto-release.yml` previously ended its
+  final step with `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` plus a **literal backslash-n** suffix
+  that corrupted the token for `gh release create` and `gh workflow run`. The stray suffix has been
+  removed. → See [SEED-5](#seed-5--audit-and-fix-auto-releaseyml-token-line).
 - **Test-only matcher path ignores timezone.** `matchSlot(config, nowOverride)` uses
   `nowOverride.getHours()` (local time) and ignores `config.timezone`. Harmless today because
   the override is only used in tests, but it is an inconsistency that will bite if that path is
   reused. → See [SEED-3](#seed-3--pin-or-fix-matchslot-nowoverride-timezone-handling).
-- **Sync I/O in async path.** `loadConfig` uses blocking `readFileSync` while `ensureConfig`
-  and the save path are async. → See [SEED-6](#seed-6--make-loadconfig-async).
+- **Sync I/O in async path (fixed).** `loadConfig` previously used blocking `readFileSync` while
+  `ensureConfig` and the save path are async. → See [SEED-6](#seed-6--make-loadconfig-async).
 - **No formatter/linter.** Only `.editorconfig` is present; no Prettier/ESLint or format
   check in CI. Style drift is caught only by `tsc`.
 - **README example is the only config example.** No annotated, copyable example file and no
@@ -170,16 +168,15 @@ independent and can be taken in any order unless noted.
 
 ### SEED-5 — Audit and fix `auto-release.yml` token line
 
-- **What.** `.github/workflows/auto-release.yml` final step has
-  `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n` with a **literal `\n`** (backslash-n) at the end,
-  corrupting the token used by `gh release create` and `gh workflow run`. Verify whether
-  GitHub Releases are actually being created for version bumps, then remove the stray `\n`.
+- **What.** `.github/workflows/auto-release.yml` final step had a **literal `\n`** (backslash-n)
+  suffix on `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`, corrupting the token used by
+  `gh release create` and `gh workflow run`. The stray suffix has been removed.
 - **Why.** Suspected silent CI bug. npm publishes still work via the `v*.*.*` tag trigger, so
   it hides easily, but the auto-created GitHub Release + dispatch handoff is likely broken.
 - **Scope.** ~30–45 min.
 - **Files.** `.github/workflows/auto-release.yml`; optionally a note in `docs/release.md`.
 - **Acceptance.**
-  - [ ] Stray trailing `\n` removed; line ends with `}}`.
+  - [x] Stray trailing `\n` removed; line ends with `}}`.
   - [ ] Verified (via Actions run history or a dry observation) that the `gh release` step runs
         with a valid token — or documented why it was already working.
   - [ ] `npm run ci` green; no accidental change to the dispatch handoff contract described in
@@ -195,7 +192,7 @@ independent and can be taken in any order unless noted.
 - **Scope.** ~30–45 min.
 - **Files.** `lib/config.ts`, `extensions/index.ts` (`ensureConfig`), `tests/config.test.mjs`.
 - **Acceptance.**
-  - [ ] `loadConfig` is async and awaited at all call sites.
+  - [x] `loadConfig` is async and awaited at all call sites.
   - [ ] Tests updated to `await`; behavior unchanged; `npm run ci` green.
 
 ### SEED-7 (optional, lower priority) — Add a format/lint check to CI

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { load as parseYaml } from "js-yaml";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { CONFIG_VERSION, type ScheduledRouterConfig, type TimeSlot } from "./types.ts";
@@ -7,7 +7,7 @@ import { CONFIG_FILENAME, resolveConfigPath } from "./paths.ts";
 export { resolveConfigPath } from "./paths.ts";
 
 /** Attempts to load, parse, and validate the YAML config. Notifies on failure. */
-export function loadConfig(ctx: ExtensionContext): ScheduledRouterConfig | undefined {
+export async function loadConfig(ctx: ExtensionContext): Promise<ScheduledRouterConfig | undefined> {
   const configPath = resolveConfigPath(ctx);
   if (!configPath) {
     ctx.ui.notify(
@@ -19,7 +19,7 @@ export function loadConfig(ctx: ExtensionContext): ScheduledRouterConfig | undef
 
   let raw: unknown;
   try {
-    const text = readFileSync(configPath, "utf8");
+    const text = await readFile(configPath, "utf8");
     raw = parseYaml(text);
   } catch (error) {
     ctx.ui.notify(`Scheduled router: failed to parse YAML config: ${errorMessage(error)}`, "warning");

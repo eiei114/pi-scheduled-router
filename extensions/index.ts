@@ -20,7 +20,7 @@ export default function scheduledRouter(pi: ExtensionAPI) {
   async function ensureConfig(ctx: ExtensionContext): Promise<boolean> {
     if (config) return true;
     configPath = resolveConfigPath(ctx) ?? projectConfigPath(ctx.cwd);
-    config = loadConfig(ctx);
+    config = await loadConfig(ctx);
     return config !== undefined;
   }
 
