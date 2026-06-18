@@ -8,9 +8,8 @@ import { StringEnum } from "../lib/schema.ts";
 import { loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
 import { CONFIG_FILENAME, projectConfigPath } from "../lib/paths.ts";
 import { matchSlot, getNowInTimezone } from "../lib/matcher.ts";
+import { clearScheduledRouterStatus, selectAndSetModel } from "../lib/selection.ts";
 import type { MatchResult, ScheduledRouterConfig } from "../lib/types.ts";
-
-const STATUS_KEY = "scheduled-router";
 
 export default function scheduledRouter(pi: ExtensionAPI) {
   let config: ScheduledRouterConfig | undefined;
@@ -27,45 +26,12 @@ export default function scheduledRouter(pi: ExtensionAPI) {
   async function trySelectModel(ctx: ExtensionContext): Promise<void> {
     if (!(await ensureConfig(ctx)) || !config) return;
 
-    const match = matchSlot(config);
-    currentMatch = match;
-    if (!match) return;
-
-    const model = ctx.modelRegistry.find(match.provider, match.model);
-    if (!model) {
-      if (match.matched) {
-        ctx.ui.notify(
-          `Scheduled router: ${match.provider}/${match.model} not found, falling back to default.`,
-          "warning",
-        );
-        const defaultModel = ctx.modelRegistry.find(config.default.provider, config.default.model);
-        if (defaultModel) {
-          await pi.setModel(defaultModel);
-          ctx.ui.setStatus(STATUS_KEY, `default:${config.default.provider}/${config.default.model}`);
-          return;
-        }
-        ctx.ui.notify(
-          `Scheduled router: default ${config.default.provider}/${config.default.model} also not found.`,
-          "warning",
-        );
-        return;
-      }
-
-      ctx.ui.notify(
-        `Scheduled router: default ${match.provider}/${match.model} not found.`,
-        "warning",
-      );
-      return;
-    }
-
-    const success = await pi.setModel(model);
-    if (success) {
-      ctx.ui.setStatus(STATUS_KEY, `${match.provider}/${match.model}`);
-    }
+    currentMatch = matchSlot(config);
+    await selectAndSetModel(pi, ctx, config);
   }
 
   function clearStatus(ctx: ExtensionContext): void {
-    ctx.ui.setStatus(STATUS_KEY, undefined);
+    clearScheduledRouterStatus(ctx);
     config = undefined;
     currentMatch = undefined;
     configPath = undefined;
