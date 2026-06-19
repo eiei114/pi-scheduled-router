@@ -102,7 +102,12 @@ export default function scheduledRouter(pi: ExtensionAPI) {
       if (params.action === "read") {
         const cfgPath = resolveConfigPath(ctx);
         if (!cfgPath) return textResult("", { configured: false, configPath: undefined });
-        const rawText = await readFile(cfgPath, "utf8");
+        let rawText: string;
+        try {
+          rawText = await readFile(cfgPath, "utf8");
+        } catch (err) {
+          return textResult(`Failed to read config file: ${errorMessage(err)}`, { configured: true, configPath: cfgPath, valid: false });
+        }
         let parsed: unknown;
         try {
           parsed = parseYaml(rawText);
