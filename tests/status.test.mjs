@@ -30,9 +30,9 @@ test("formatScheduledRouterStatus shows matched slot details", () => {
   });
 
   assert.match(text, /Current time: 2026-06-07 14:23/);
-  assert.match(text, /Timezone:    Asia\/Tokyo/);
-  assert.match(text, /Matched:     slot\[0\] 10:00-15:00 → cursor\/composer-2.5/);
-  assert.match(text, /Config:      C:\/Users\/Keisu\/.pi\/scheduled-router.yaml/);
+  assert.match(text, /Timezone:     Asia\/Tokyo/);
+  assert.match(text, /Matched:      slot\[0\] 10:00-15:00 → cursor\/composer-2.5/);
+  assert.match(text, /Config:       C:\/Users\/Keisu\/.pi\/scheduled-router.yaml/);
 });
 
 test("formatScheduledRouterStatus shows default when no slot matches", () => {
