@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning.
 
+## [0.1.1] - 2026-06-08
+
+### Fixed
+
+- Missing JSDoc docstrings on internal validation helpers and `StringEnum` to meet docstring coverage threshold (80%).
+
 ## [0.1.0] - 2026-06-07
 
 ### Added

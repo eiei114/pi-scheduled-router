@@ -6,11 +6,13 @@ function parseMinutes(value: string): number {
   return h * 60 + m;
 }
 
-/** Get current hour/minute in a target IANA timezone (or system local). */
-export function getNowInTimezone(tz?: string): { hours: number; minutes: number } {
+/** Get hour/minute for a date in a target IANA timezone (or system local). */
+export function getNowInTimezone(
+  tz?: string,
+  date: Date = new Date(),
+): { hours: number; minutes: number } {
   if (!tz) {
-    const now = new Date();
-    return { hours: now.getHours(), minutes: now.getMinutes() };
+    return { hours: date.getHours(), minutes: date.getMinutes() };
   }
 
   const formatter = new Intl.DateTimeFormat("en", {
@@ -19,7 +21,7 @@ export function getNowInTimezone(tz?: string): { hours: number; minutes: number 
     minute: "2-digit",
     hourCycle: "h23",
   });
-  const [hours, minutes] = formatter.format(new Date()).split(":").map(Number);
+  const [hours, minutes] = formatter.format(date).split(":").map(Number);
   return { hours, minutes };
 }
 
@@ -35,9 +37,8 @@ export function matchSlot(
 ): MatchResult | undefined {
   if (!config) return undefined;
 
-  const { hours, minutes } = nowOverride
-    ? { hours: nowOverride.getHours(), minutes: nowOverride.getMinutes() }
-    : getNowInTimezone(config.timezone);
+  const referenceDate = nowOverride ?? new Date();
+  const { hours, minutes } = getNowInTimezone(config.timezone, referenceDate);
 
   const nowMinutes = hours * 60 + minutes;
 

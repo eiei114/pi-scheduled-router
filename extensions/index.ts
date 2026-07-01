@@ -1,5 +1,4 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { load as parseYaml, dump as stringifyYaml } from "js-yaml";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -7,106 +6,48 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { StringEnum } from "../lib/schema.ts";
 import { loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
-import { matchSlot, getNowInTimezone } from "../lib/matcher.ts";
+import { CONFIG_FILENAME, projectConfigPath } from "../lib/paths.ts";
+import { matchSlot } from "../lib/matcher.ts";
+import { clearScheduledRouterStatus, selectAndSetModel } from "../lib/selection.ts";
+import { formatScheduledRouterStatus } from "../lib/status.ts";
 import type { MatchResult, ScheduledRouterConfig } from "../lib/types.ts";
-
-const STATUS_KEY = "scheduled-router";
-const CONFIG_FILENAME = "scheduled-router.yaml";
 
 export default function scheduledRouter(pi: ExtensionAPI) {
   let config: ScheduledRouterConfig | undefined;
   let currentMatch: MatchResult | undefined;
   let configPath: string | undefined;
 
-  function resolveConfigPathInner(ctx: ExtensionContext): string | undefined {
-    const projectPath = join(ctx.cwd, ".pi", CONFIG_FILENAME);
-    if (existsSync(projectPath)) return projectPath;
-
-    const agentPath = join(getAgentDir(), CONFIG_FILENAME);
-    if (existsSync(agentPath)) return agentPath;
-
-    return projectPath; // default write target
-  }
-
   async function ensureConfig(ctx: ExtensionContext): Promise<boolean> {
     if (config) return true;
-    configPath = resolveConfigPathInner(ctx);
-    config = loadConfig(ctx);
+    configPath = resolveConfigPath(ctx) ?? projectConfigPath(ctx.cwd);
+    config = await loadConfig(ctx);
     return config !== undefined;
   }
 
   async function trySelectModel(ctx: ExtensionContext): Promise<void> {
     if (!(await ensureConfig(ctx)) || !config) return;
 
-    const match = matchSlot(config);
-    currentMatch = match;
-    if (!match) return;
-
-    const model = ctx.modelRegistry.find(match.provider, match.model);
-    if (!model) {
-      if (match.matched) {
-        ctx.ui.notify(
-          `Scheduled router: ${match.provider}/${match.model} not found, falling back to default.`,
-          "warning",
-        );
-        const defaultModel = ctx.modelRegistry.find(config.default.provider, config.default.model);
-        if (defaultModel) {
-          await pi.setModel(defaultModel);
-          ctx.ui.setStatus(STATUS_KEY, `default:${config.default.provider}/${config.default.model}`);
-          return;
-        }
-        ctx.ui.notify(
-          `Scheduled router: default ${config.default.provider}/${config.default.model} also not found.`,
-          "warning",
-        );
-        return;
-      }
-
-      ctx.ui.notify(
-        `Scheduled router: default ${match.provider}/${match.model} not found.`,
-        "warning",
-      );
-      return;
-    }
-
-    const success = await pi.setModel(model);
-    if (success) {
-      ctx.ui.setStatus(STATUS_KEY, `${match.provider}/${match.model}`);
-    }
+    currentMatch = matchSlot(config);
+    await selectAndSetModel(pi, ctx, config);
   }
 
   function clearStatus(ctx: ExtensionContext): void {
-    ctx.ui.setStatus(STATUS_KEY, undefined);
+    clearScheduledRouterStatus(ctx);
     config = undefined;
     currentMatch = undefined;
     configPath = undefined;
   }
 
-  function formatStatus(): string {
-    const nowTz = config?.timezone;
-    const local = getNowInTimezone(nowTz);
-    const tzSuffix = nowTz ? ` ${nowTz}` : "";
-
-    const lines: string[] = [
-      `Current time: ${String(local.hours).padStart(2, "0")}:${String(local.minutes).padStart(2, "0")}${tzSuffix}`,
-      `Timezone:     ${nowTz ?? "system-local"}`,
-    ];
-
-    if (!currentMatch) {
-      lines.push("Status:      not evaluated (config not loaded)");
-    } else if (currentMatch.matched) {
-      const slotIndex = currentMatch.slotIndex ?? -1;
-      const slot = config?.slots[slotIndex];
-      const range = slot ? `${slot.from}-${slot.to}` : "?";
-      lines.push(`Matched:      slot[${slotIndex}] ${range} → ${currentMatch.provider}/${currentMatch.model}`);
-    } else {
-      lines.push(`Matched:      no slot, using default → ${currentMatch.provider}/${currentMatch.model}`);
+  async function refreshMatch(ctx: ExtensionContext): Promise<void> {
+    if (!(await ensureConfig(ctx)) || !config) {
+      currentMatch = undefined;
+      return;
     }
+    currentMatch = matchSlot(config);
+  }
 
-    const resolvedPath = configPath ?? "(not configured)";
-    lines.push(`Config:      ${resolvedPath}`);
-
-    return lines.join("\n");
+  function formatStatus(): string {
+    return formatScheduledRouterStatus({ config, currentMatch, configPath });
   }
 
   // ── Session lifecycle ──
@@ -124,14 +65,15 @@ export default function scheduledRouter(pi: ExtensionAPI) {
   pi.registerCommand("scheduled:status", {
     description: "Show current scheduled router status (time, matched slot, model)",
     handler: async (_args, ctx) => {
-      await ensureConfig(ctx);
+      await refreshMatch(ctx);
       ctx.ui.notify(formatStatus(), "info");
     },
   });
 
   pi.registerCommand("scheduled:configure", {
     description: "Guide to configure scheduled router time slots",
-    handler: async (_args, _ctx) => {
+    handler: async (_args, ctx) => {
+      await ensureConfig(ctx);
       pi.sendUserMessage(buildConfigurePrompt(config));
     },
   });
@@ -153,15 +95,32 @@ export default function scheduledRouter(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (params.action === "status") {
-        await ensureConfig(ctx);
+        await refreshMatch(ctx);
         return textResult(formatStatus());
       }
 
       if (params.action === "read") {
         const cfgPath = resolveConfigPath(ctx);
         if (!cfgPath) return textResult("", { configured: false, configPath: undefined });
-        const content = await readFile(cfgPath, "utf8");
-        return textResult(content, { configPath: cfgPath, configured: true });
+        let rawText: string;
+        try {
+          rawText = await readFile(cfgPath, "utf8");
+        } catch (err) {
+          return textResult(`Failed to read config file: ${errorMessage(err)}`, { configured: true, configPath: cfgPath, valid: false });
+        }
+        let parsed: unknown;
+        try {
+          parsed = parseYaml(rawText);
+        } catch (err) {
+          return textResult(`Config is not valid YAML: ${errorMessage(err)}`, { configured: true, configPath: cfgPath, valid: false });
+        }
+        try {
+          const validated = validateConfig(parsed);
+          const content = stringifyYaml(validated, { indent: 2, noRefs: true, lineWidth: 120 });
+          return textResult(content, { configPath: cfgPath, configured: true });
+        } catch (err) {
+          return textResult(`Config validation failed: ${errorMessage(err)}`, { configured: true, configPath: cfgPath, valid: false });
+        }
       }
 
       if (!params.configYaml) {
@@ -185,7 +144,10 @@ export default function scheduledRouter(pi: ExtensionAPI) {
       }
 
       if (params.action === "validate") {
-        return textResult("Config is valid.", { valid: true, config: yamlStringify(validated) });
+        return textResult("Config is valid.", {
+          valid: true,
+          config: stringifyYaml(validated, { indent: 2, noRefs: true, lineWidth: 120 }),
+        });
       }
 
       // action === "save"
@@ -219,7 +181,9 @@ export default function scheduledRouter(pi: ExtensionAPI) {
 // ── Helpers ──
 
 function buildConfigurePrompt(currentConfig: ScheduledRouterConfig | undefined): string {
-  const configText = currentConfig ? yamlStringify(currentConfig) : "(not configured)";
+  const configText = currentConfig
+    ? stringifyYaml(currentConfig, { indent: 2, noRefs: true, lineWidth: 120 })
+    : "(not configured)";
   return [
     "Start pi-scheduled-router configuration setup.",
     "",
@@ -232,22 +196,6 @@ function buildConfigurePrompt(currentConfig: ScheduledRouterConfig | undefined):
     "Current config:",
     configText,
   ].join("\n");
-}
-
-function yamlStringify(config: ScheduledRouterConfig): string {
-  const lines: string[] = ["version: 1"];
-  if (config.timezone) lines.push(`timezone: "${config.timezone}"`);
-  lines.push("default:");
-  lines.push(`  provider: ${config.default.provider}`);
-  lines.push(`  model: ${config.default.model}`);
-  lines.push("slots:");
-  for (const slot of config.slots) {
-    lines.push(`  - from: "${slot.from}"`);
-    lines.push(`    to: "${slot.to}"`);
-    lines.push(`    provider: ${slot.provider}`);
-    lines.push(`    model: ${slot.model}`);
-  }
-  return lines.join("\n");
 }
 
 function summarizeConfig(config: ScheduledRouterConfig): string {
