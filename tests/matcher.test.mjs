@@ -183,3 +183,69 @@ test("matchSlot uses timezone offset when injected now differs from local", () =
   assert.equal(before?.matched, false);
   assert.equal(before?.provider, "deepseek");
 });
+
+// ── DST transitions (America/New_York) ──
+//
+// Spring forward (2026-03-08): 02:00 local is skipped; clocks jump to 03:00.
+// Fall back (2026-11-01): 01:00–01:59 repeats; Intl picks a canonical local time.
+// These tests document Intl.DateTimeFormat behavior used by getNowInTimezone.
+
+const NY_TZ = "America/New_York";
+
+/** Config with Eastern timezone for DST boundary checks. */
+function nyConfig(slots) {
+  return {
+    version: 1,
+    timezone: NY_TZ,
+    default: { provider: "deepseek", model: "deepseek-v4-pro" },
+    slots,
+  };
+}
+
+test("getNowInTimezone spring-forward: skipped 02:30 resolves to 03:30 Eastern", () => {
+  // 07:30 UTC would be 02:30 EST, but that local time does not exist on transition day.
+  const result = getNowInTimezone(NY_TZ, new Date("2026-03-08T07:30:00Z"));
+  assert.equal(result.hours, 3);
+  assert.equal(result.minutes, 30);
+});
+
+test("getNowInTimezone fall-back: ambiguous 01:30 resolves consistently via Intl", () => {
+  // During the repeated hour, Intl maps this UTC instant to 01:30 Eastern.
+  const result = getNowInTimezone(NY_TZ, new Date("2026-11-01T06:30:00Z"));
+  assert.equal(result.hours, 1);
+  assert.equal(result.minutes, 30);
+});
+
+test("matchSlot spring-forward: skipped hour matches post-transition slot, not pre-gap slot", () => {
+  const skippedInstant = new Date("2026-03-08T07:30:00Z"); // Intl -> 03:30 Eastern
+
+  const preGap = nyConfig([
+    { from: "02:00", to: "03:00", provider: "pre-gap", model: "a" },
+  ]);
+  const postGap = nyConfig([
+    { from: "03:00", to: "05:00", provider: "post-gap", model: "b" },
+  ]);
+
+  assert.equal(matchSlot(preGap, skippedInstant)?.matched, false);
+  assert.equal(matchSlot(preGap, skippedInstant)?.provider, "deepseek");
+
+  assert.equal(matchSlot(postGap, skippedInstant)?.matched, true);
+  assert.equal(matchSlot(postGap, skippedInstant)?.provider, "post-gap");
+});
+
+test("matchSlot fall-back: ambiguous 01:30 matches first-hour slot in Eastern timezone", () => {
+  const ambiguousInstant = new Date("2026-11-01T06:30:00Z"); // Intl -> 01:30 Eastern
+
+  const firstHour = nyConfig([
+    { from: "01:00", to: "02:00", provider: "first-hour", model: "a" },
+  ]);
+  const secondHour = nyConfig([
+    { from: "02:00", to: "03:00", provider: "second-hour", model: "b" },
+  ]);
+
+  assert.equal(matchSlot(firstHour, ambiguousInstant)?.matched, true);
+  assert.equal(matchSlot(firstHour, ambiguousInstant)?.provider, "first-hour");
+
+  assert.equal(matchSlot(secondHour, ambiguousInstant)?.matched, false);
+  assert.equal(matchSlot(secondHour, ambiguousInstant)?.provider, "deepseek");
+});
