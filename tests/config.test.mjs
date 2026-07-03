@@ -117,6 +117,42 @@ test("validateConfig rejects slot with invalid HH:MM", () => {
   );
 });
 
+test("validateConfig rejects slot with minute out of range", () => {
+  assert.throws(
+    () =>
+      validateConfig({
+        ...VALID_CONFIG,
+        slots: [{ from: "10:60", to: "15:00", provider: "x", model: "y" }],
+      }),
+    /minute must be 00–59/,
+  );
+});
+
+test("validateConfig rejects zero-duration slot", () => {
+  assert.throws(
+    () =>
+      validateConfig({
+        ...VALID_CONFIG,
+        slots: [{ from: "10:00", to: "10:00", provider: "x", model: "y" }],
+      }),
+    /zero duration/,
+  );
+});
+
+test("validateConfig rejects unknown top-level keys", () => {
+  assert.throws(
+    () => validateConfig({ ...VALID_CONFIG, typo: "oops" }),
+    /Unknown config key.*typo/,
+  );
+});
+
+test("validateConfig rejects multiple unknown top-level keys", () => {
+  assert.throws(
+    () => validateConfig({ ...VALID_CONFIG, foo: 1, bar: 2 }),
+    /Unknown config keys.*foo.*bar/,
+  );
+});
+
 test("validateConfig accepts valid timezone", () => {
   const result = validateConfig({ ...VALID_CONFIG, timezone: "Asia/Tokyo" });
   assert.equal(result.timezone, "Asia/Tokyo");

@@ -83,6 +83,8 @@ slots:
 3. Start a new Pi session — the model is selected based on the current time.
 4. Run `/scheduled:status` to see current selection.
 
+**Validation rules:** Only `version`, `timezone`, `default`, and `slots` are allowed at the top level. Each slot must have a non-zero duration (`from` must differ from `to`). Times use `HH:MM` with minutes `00`–`59` and hours `00`–`24` (`24:00` only).
+
 Or use `/scheduled:configure` to set up time slots interactively with your agent.
 
 ## Commands

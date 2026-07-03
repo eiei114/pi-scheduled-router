@@ -36,9 +36,13 @@ export async function loadConfig(ctx: ExtensionContext): Promise<ScheduledRouter
 
 // ── Validation (exported for tool usage) ──
 
+const ALLOWED_TOP_LEVEL_KEYS = new Set(["version", "timezone", "default", "slots"]);
+
 /** Validates a parsed YAML value and returns a typed `ScheduledRouterConfig`. */
 export function validateConfig(value: unknown): ScheduledRouterConfig {
   if (!isRecord(value)) throw new Error("config must be an object.");
+
+  validateNoUnknownTopLevelKeys(value);
 
   if (value.version !== CONFIG_VERSION) {
     throw new Error(`Unsupported config version ${String(value.version)}. Expected ${CONFIG_VERSION}.`);
@@ -85,6 +89,11 @@ function validateSlots(value: unknown): TimeSlot[] {
     const to = nonEmptyString(entry.to, `slots[${index}].to`);
     validateHhMm(from, `slots[${index}].from`);
     validateHhMm(to, `slots[${index}].to`);
+    if (from === to) {
+      throw new Error(
+        `slots[${index}] has zero duration: from and to are both "${from}". Use a non-empty time range.`,
+      );
+    }
     return {
       from,
       to,
@@ -94,14 +103,30 @@ function validateSlots(value: unknown): TimeSlot[] {
   });
 }
 
+/** Rejects unknown top-level YAML keys. Only `version`, `timezone`, `default`, and `slots` are allowed. */
+function validateNoUnknownTopLevelKeys(value: Record<string, unknown>): void {
+  const unknown = Object.keys(value).filter((key) => !ALLOWED_TOP_LEVEL_KEYS.has(key));
+  if (unknown.length === 0) return;
+  const keys = unknown.map((k) => `"${k}"`).join(", ");
+  throw new Error(
+    `Unknown config key${unknown.length > 1 ? "s" : ""}: ${keys}. Allowed top-level keys: version, timezone, default, slots.`,
+  );
+}
+
 /** Ensures a time string is in `HH:MM` format with valid hour/minute ranges. `24:00` is allowed; `24:01`–`24:59` are rejected. */
 function validateHhMm(value: string, label: string): void {
   if (!/^\d{2}:\d{2}$/.test(value)) {
     throw new Error(`${label} must be HH:MM format, got "${value}".`);
   }
   const [h, m] = value.split(":").map(Number);
-  if (h < 0 || h > 24 || m < 0 || m > 59 || (h === 24 && m !== 0)) {
-    throw new Error(`${label} invalid time "${value}".`);
+  if (h < 0 || h > 24) {
+    throw new Error(`${label} hour must be 00–24, got "${value}".`);
+  }
+  if (m < 0 || m > 59) {
+    throw new Error(`${label} minute must be 00–59, got "${value}".`);
+  }
+  if (h === 24 && m !== 0) {
+    throw new Error(`${label} must be 24:00 when hour is 24, got "${value}".`);
   }
 }
 
