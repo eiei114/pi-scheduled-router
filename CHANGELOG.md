@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
+
 All notable changes to this project will be documented in this file.
 
 This project follows semantic versioning.
@@ -26,3 +30,4 @@ This project follows semantic versioning.
 - `/scheduled:configure` command — guide for configuration via agent.
 - `scheduled_router_config` tool — read / status / validate / save YAML config.
 - CI pipeline with typecheck, 31 tests, and npm pack check.
+
