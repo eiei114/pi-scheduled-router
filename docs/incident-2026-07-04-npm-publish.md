@@ -36,7 +36,7 @@
 
 ### Failure output (failed run, `Publish to npm` step)
 
-```
+```text
 npm notice Publishing to https://registry.npmjs.org/ with tag latest and public access
 npm notice publish Signed provenance statement with source and build information from GitHub Actions
 npm notice publish Provenance statement published to transparency log: https://search.sigstore.dev/?logIndex=2069645728
@@ -103,7 +103,8 @@ duplicate dispatches possible.
 
 ## Reproducible, non-publishing checks
 
-These commands contact only read endpoints (or none) and never publish. Run from the repo root.
+Checks 1–3 contact only read endpoints (or none) and never publish. Check 4 runs local install/build
+steps and does not write to the npm registry. Run from the repo root.
 
 ### 1. Confirm the target version already exists on the public registry (read-only)
 
@@ -111,9 +112,9 @@ These commands contact only read endpoints (or none) and never publish. Run from
 npm view pi-scheduled-router@0.1.2 version dist.integrity
 ```
 
-Expected (today):
+Expected as of July 4, 2026:
 
-```
+```text
 version = 0.1.2
 dist.integrity = sha512-JBy5tQBCxoJ1qoO8/sA1qrz5hqBLfpBzOXbOhSD+jKfVzmCwpWqxtQzo5BljULXi0MGzkEZPKz9yMeBKDjauMA==
 ```
@@ -146,7 +147,10 @@ run (`refs/heads/main`) versus a tag `workflow_dispatch` (`refs/tags/v0.1.2`). D
 two runs are not serialized. No GitHub Actions run is required to confirm this — it follows directly
 from the YAML and the two trigger events.
 
-### 4. Local build / pack sanity (read-only, no write to registry)
+### 4. Local build / pack sanity (no write to registry)
+
+`npm ci` is **not** read-only: it removes and reinstalls `node_modules`, may run package lifecycle
+scripts, and can emit audit/network traffic. Prefer a disposable checkout when running it.
 
 ```bash
 npm ci
@@ -167,13 +171,19 @@ release/publish workflows remains human-owned.
   `push: branches: [main]`/`paths` and `tags`/`release` fan-in triggers from `publish.yml` so a
   version can only be published once, from one place. This eliminates the dual-trigger race at the
   source.
-- **Option A — version-normalized concurrency key.** If multiple triggers must remain, derive the
-  concurrency group from the package *version* (e.g. a first step that reads
-  `require('./package.json').version` and outputs a group like `npm-publish-<version>`) so all
-  trigger paths for the same version serialize. Stronger when combined with B.
-- **Option C — hardened pre-check.** Re-query the registry immediately before publish and treat any
-  non-`404`/ambiguous result as `skip=true`. Not sufficient on its own (inherently racy under
-  concurrency); use as defense-in-depth alongside A or B.
+- **Option A — version-normalized concurrency key.** If multiple triggers must remain, serialize
+  by package *version*. GitHub evaluates `concurrency.group` **before any job steps run**, so a
+  step output from `package.json` cannot feed the group key. Use either (1) a small prep job that
+  reads `package.json` and exposes `version`, then set the publish job's
+  `concurrency.group: npm-publish-${{ needs.prep.outputs.version }}`, or (2) derive the key
+  directly from the trigger ref/tag when that already maps 1:1 to a version (e.g.
+  `npm-publish-${{ github.event.inputs.ref || github.ref_name }}`). Stronger when combined with B.
+- **Option C — hardened pre-check.** Re-query the registry immediately before publish. Set
+  `skip=true` only when `npm view` **confirms the version already exists** (exit 0 with the expected
+  version). A confirmed `404` means `skip=false` (proceed). Timeouts, auth failures, and other
+  ambiguous responses must **retry or fail the job explicitly** — do not treat them as `skip=true`,
+  or a transient registry outage could suppress a legitimate release. Not sufficient on its own
+  (inherently racy under concurrency); use as defense-in-depth alongside A or B.
 - **Option D — treat duplicate-version `E403` as benign.** Since republishing an identical version
   is never intended here, exit `0` on an `E403` "cannot publish over" so a benign duplicate does not
   turn the workflow red. Masks real races — recommend only as defense-in-depth, not as the fix.
