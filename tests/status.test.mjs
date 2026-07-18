@@ -54,3 +54,23 @@ test("formatScheduledRouterStatus reports unloaded config", () => {
   const text = formatScheduledRouterStatus({ configPath: "(not configured)" });
   assert.match(text, /not evaluated \(config not loaded\)/);
 });
+
+test("formatScheduledRouterStatus includes config warnings only when present", () => {
+  const cleanText = formatScheduledRouterStatus({
+    config: SAMPLE_CONFIG,
+    currentMatch: { provider: "deepseek", model: "deepseek-v4-pro", matched: false },
+  });
+  assert.doesNotMatch(cleanText, /Config warnings:/);
+
+  const warningText = formatScheduledRouterStatus({
+    config: {
+      ...SAMPLE_CONFIG,
+      slots: [
+        { from: "09:00", to: "17:00", provider: "a", model: "a" },
+        { from: "13:00", to: "15:00", provider: "b", model: "b" },
+      ],
+    },
+    currentMatch: { provider: "a", model: "a", matched: true, slotIndex: 0 },
+  });
+  assert.match(warningText, /Config warnings: slot\[1\] 13:00-15:00 is fully masked/);
+});

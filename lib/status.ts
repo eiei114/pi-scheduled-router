@@ -1,5 +1,6 @@
+import { analyzeSlotWarnings } from "./config.ts";
 import { formatCurrentDateTime } from "./status-format.ts";
-import type { MatchResult, ScheduledRouterConfig } from "./types.ts";
+import type { MatchResult, ScheduledRouterConfig, SlotWarning } from "./types.ts";
 
 export { formatCurrentDateTime } from "./status-format.ts";
 
@@ -33,5 +34,15 @@ export function formatScheduledRouterStatus(ctx: StatusContext): string {
 
   lines.push(`Config:       ${configPath ?? "(not configured)"}`);
 
+  if (config) {
+    const warnings = analyzeSlotWarnings(config);
+    if (warnings.length > 0) lines.push(`Config warnings: ${formatSlotWarningSummary(warnings)}`);
+  }
+
   return lines.join("\n");
+}
+
+export function formatSlotWarningSummary(warnings: SlotWarning[]): string {
+  if (warnings.length === 0) return "none";
+  return warnings.map((warning) => warning.message).join(" ");
 }

@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
+import { analyzeSlotWarnings, loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
 
 const VALID_CONFIG = {
   version: 1,
@@ -165,6 +165,56 @@ test("validateConfig rejects invalid timezone", () => {
 test("validateConfig accepts empty timezone", () => {
   const result = validateConfig({ ...VALID_CONFIG, timezone: undefined });
   assert.equal(result.timezone, undefined);
+});
+
+test("analyzeSlotWarnings warns for identical ranges", () => {
+  const warnings = analyzeSlotWarnings(validateConfig({
+    ...VALID_CONFIG,
+    slots: [
+      { from: "09:00", to: "17:00", provider: "a", model: "a" },
+      { from: "09:00", to: "17:00", provider: "b", model: "b" },
+    ],
+  }));
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].slotIndex, 1);
+  assert.match(warnings[0].message, /slot\[1\] 09:00-17:00.*slot\[0\]/);
+});
+
+test("analyzeSlotWarnings warns for contained normal ranges", () => {
+  const warnings = analyzeSlotWarnings(validateConfig({
+    ...VALID_CONFIG,
+    slots: [
+      { from: "09:00", to: "17:00", provider: "a", model: "a" },
+      { from: "13:00", to: "15:00", provider: "b", model: "b" },
+    ],
+  }));
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].slotRange, "13:00-15:00");
+});
+
+test("analyzeSlotWarnings warns for contained day-spanning ranges", () => {
+  const warnings = analyzeSlotWarnings(validateConfig({
+    ...VALID_CONFIG,
+    slots: [
+      { from: "20:00", to: "24:00", provider: "a", model: "a" },
+      { from: "00:00", to: "04:00", provider: "b", model: "b" },
+      { from: "22:00", to: "02:00", provider: "c", model: "c" },
+    ],
+  }));
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].slotIndex, 2);
+  assert.deepEqual(warnings[0].maskedBy.map((slot) => slot.slotIndex), [0, 1]);
+});
+
+test("analyzeSlotWarnings does not warn for adjacent ranges", () => {
+  const warnings = analyzeSlotWarnings(validateConfig({
+    ...VALID_CONFIG,
+    slots: [
+      { from: "09:00", to: "12:00", provider: "a", model: "a" },
+      { from: "12:00", to: "15:00", provider: "b", model: "b" },
+    ],
+  }));
+  assert.deepEqual(warnings, []);
 });
 
 test("resolveConfigPath prefers project .pi over agent dir", async () => {

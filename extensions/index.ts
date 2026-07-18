@@ -5,12 +5,12 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { StringEnum } from "../lib/schema.ts";
-import { loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
+import { analyzeSlotWarnings, loadConfig, resolveConfigPath, validateConfig } from "../lib/config.ts";
 import { CONFIG_FILENAME, projectConfigPath } from "../lib/paths.ts";
 import { matchSlot } from "../lib/matcher.ts";
 import { clearScheduledRouterStatus, selectAndSetModel } from "../lib/selection.ts";
-import { formatScheduledRouterStatus } from "../lib/status.ts";
-import type { MatchResult, ScheduledRouterConfig } from "../lib/types.ts";
+import { formatScheduledRouterStatus, formatSlotWarningSummary } from "../lib/status.ts";
+import type { MatchResult, ScheduledRouterConfig, SlotWarning } from "../lib/types.ts";
 
 export default function scheduledRouter(pi: ExtensionAPI) {
   let config: ScheduledRouterConfig | undefined;
@@ -144,8 +144,10 @@ export default function scheduledRouter(pi: ExtensionAPI) {
       }
 
       if (params.action === "validate") {
-        return textResult("Config is valid.", {
+        const warnings = analyzeSlotWarnings(validated);
+        return textResult(formatValidationResult(warnings), {
           valid: true,
+          warnings,
           config: stringifyYaml(validated, { indent: 2, noRefs: true, lineWidth: 120 }),
         });
       }
@@ -155,8 +157,9 @@ export default function scheduledRouter(pi: ExtensionAPI) {
         return textResult("Config not saved: confirmation UI is unavailable.", { saved: false, configPath: configPath });
       }
 
-      const ok = await ctx.ui.confirm("Save scheduled router config?", summarizeConfig(validated));
-      if (!ok) return textResult("Config not saved.", { saved: false, configPath: configPath });
+      const warnings = analyzeSlotWarnings(validated);
+      const ok = await ctx.ui.confirm("Save scheduled router config?", summarizeConfig(validated, warnings));
+      if (!ok) return textResult("Config not saved.", { saved: false, configPath: configPath, warnings });
 
       const writeTarget = configPath ?? join(getAgentDir(), CONFIG_FILENAME);
       const yamlText = stringifyYaml(parsed, { indent: 2, noRefs: true, lineWidth: 120 });
@@ -173,7 +176,7 @@ export default function scheduledRouter(pi: ExtensionAPI) {
       await ensureConfig(ctx);
       await trySelectModel(ctx);
 
-      return textResult("Config saved and model reselected.", { saved: true, configPath: writeTarget });
+      return textResult(formatSaveResult(warnings), { saved: true, configPath: writeTarget, warnings });
     },
   });
 }
@@ -198,16 +201,28 @@ function buildConfigurePrompt(currentConfig: ScheduledRouterConfig | undefined):
   ].join("\n");
 }
 
-function summarizeConfig(config: ScheduledRouterConfig): string {
+function summarizeConfig(config: ScheduledRouterConfig, warnings: SlotWarning[] = []): string {
   const slots = config.slots
     .map((s, i) => `  ${i}: ${s.from}-${s.to} → ${s.provider}/${s.model}`)
     .join("\n");
-  return [
+  const lines = [
     `Timezone: ${config.timezone ?? "system-local"}`,
     `Default:  ${config.default.provider}/${config.default.model}`,
     `Slots (${config.slots.length}):`,
     slots,
-  ].join("\n");
+  ];
+  if (warnings.length > 0) lines.push("", `Config warnings: ${formatSlotWarningSummary(warnings)}`);
+  return lines.join("\n");
+}
+
+function formatValidationResult(warnings: SlotWarning[]): string {
+  return warnings.length > 0 ? `Config is valid. Config warnings: ${formatSlotWarningSummary(warnings)}` : "Config is valid. No config warnings.";
+}
+
+function formatSaveResult(warnings: SlotWarning[]): string {
+  return warnings.length > 0
+    ? `Config saved and model reselected. Config warnings: ${formatSlotWarningSummary(warnings)}`
+    : "Config saved and model reselected. No config warnings.";
 }
 
 function errorMessage(err: unknown): string {

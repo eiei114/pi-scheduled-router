@@ -19,6 +19,14 @@ export interface ScheduledRouterConfig {
   slots: TimeSlot[];
 }
 
+export interface SlotWarning {
+  type: "masked-slot";
+  slotIndex: number;
+  slotRange: string;
+  maskedBy: Array<{ slotIndex: number; slotRange: string }>;
+  message: string;
+}
+
 export interface MatchResult {
   provider: string;
   model: string;
