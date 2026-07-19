@@ -36,7 +36,7 @@ pi install npm:pi-scheduled-router
 Pin a specific version:
 
 ```bash
-pi install npm:pi-scheduled-router@0.1.2
+pi install npm:pi-scheduled-router@0.1.3
 ```
 
 Install into the current project instead of your user Pi settings:
@@ -85,6 +85,8 @@ slots:
 4. Run `/scheduled:status` to see current selection.
 
 **Validation rules:** Only `version`, `timezone`, `default`, and `slots` are allowed at the top level. Each slot must have a non-zero duration (`from` must differ from `to`). Times use `HH:MM` with minutes `00`–`59` and hours `00`–`24` (`24:00` only).
+
+**Overlap warnings:** Slots are evaluated in order and first match wins. If a later slot is fully covered by earlier slots (for example duplicate ranges, `09:00`–`17:00` before `13:00`–`15:00`, or covered day-spanning slots such as `22:00`–`02:00`), the config is still valid but `scheduled_router_config validate`, `scheduled_router_config save`, and `/scheduled:status`/tool `status` show a `Config warnings:` summary so you can reorder or split slots.
 
 Or use `/scheduled:configure` to set up time slots interactively with your agent.
 

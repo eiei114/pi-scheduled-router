@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add warning-only masked slot analysis for first-match-wins scheduled router configs, surfaced in validate/save/status outputs.
 - Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
 
 All notable changes to this project will be documented in this file.
