@@ -1,6 +1,6 @@
 {
   "name": "pi-scheduled-router",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Switch Pi's AI provider and model based on time of day via YAML time-slot configuration.",
   "type": "module",
   "license": "MIT",
