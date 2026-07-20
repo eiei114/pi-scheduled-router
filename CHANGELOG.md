@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Bump package version to `0.1.4` for the next patch release.
+
 - Add warning-only masked slot analysis for first-match-wins scheduled router configs, surfaced in validate/save/status outputs.
 - Add Buy Me a Coffee sponsor button to README and native GitHub funding link via `.github/FUNDING.yml`.
 
