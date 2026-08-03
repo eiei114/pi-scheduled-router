@@ -1,5 +1,7 @@
 # Pi Scheduled Router
 
+[![Join dotfield.xyz on Discord](https://img.shields.io/badge/Join%20dotfield.xyz%20on%20Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/4945dXZVW5)
+
 [![CI](https://github.com/eiei114/pi-scheduled-router/actions/workflows/ci.yml/badge.svg)](https://github.com/eiei114/pi-scheduled-router/actions/workflows/ci.yml)
 [![Publish](https://github.com/eiei114/pi-scheduled-router/actions/workflows/publish.yml/badge.svg)](https://github.com/eiei114/pi-scheduled-router/actions/workflows/publish.yml)
 [![npm version](https://img.shields.io/npm/v/pi-scheduled-router.svg)](https://www.npmjs.com/package/pi-scheduled-router)
