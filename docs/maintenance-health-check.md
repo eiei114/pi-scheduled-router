@@ -41,7 +41,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 - **DST transitions:** Covered for `America/New_York` spring-forward / fall-back in `tests/matcher.test.mjs`.
 - **Non-whole-hour zones:** No assertions for `Asia/Kolkata` (+05:30) or `Pacific/Chatham` (+12:45).
-- **`nowOverride` in tests:** `matchSlot(config, date)` uses local `Date` hours/minutes, not `config.timezone`. Production path uses `getNowInTimezone(config.timezone)` — test helper limitation only.
+- **`nowOverride` in tests:** When `config.timezone` is set, injected `Date` values are evaluated in that IANA timezone via `getNowInTimezone` (see `matchSlot evaluates injected now in configured timezone` and `matchSlot uses timezone offset when injected now differs from local`). Configs without `timezone` still use the runner's local clock.
 
 ### `scheduled-router.yaml` validation gaps
 
