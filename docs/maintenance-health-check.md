@@ -19,7 +19,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## CI verification
 
-- **Local `npm run ci`:** pass (typecheck, 70 tests, `npm pack --dry-run`).
+- **Local `npm run ci`:** pass (typecheck, 79 tests, `npm pack --dry-run`).
 - **Workflow pinning:** `actions/checkout@v7`, `actions/setup-node@v7`.
 
 ## Test inventory
@@ -30,10 +30,10 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `tests/matcher.test.mjs` | 23 | Slot matching, day-spanning, DST boundaries |
 | `tests/session-start.test.mjs` | 7 | Session-start model selection and fallbacks |
 | `tests/status.test.mjs` | 5 | Status formatting and config warnings |
-| `tests/extension-validate.test.mjs` | 3 | `scheduled_router_config` validate warnings |
+| `tests/extension-validate.test.mjs` | 12 | Extension hooks, commands, status/configure flows, and config tool operations |
 | `tests/docs-consistency.test.mjs` | 3 | README pin + maintenance baseline drift guard |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
-| **Total** | **70** | **70 pass / 0 fail** |
+| **Total** | **79** | **79 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 
@@ -56,7 +56,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## Fixes in this maintenance PR
 
-- Refresh stale 2026-07 maintenance baseline (31-test inventory, `actions/checkout@v6`) to match the current 70-test suite and `@v7` workflow pins.
+- Refresh stale 2026-07 maintenance baseline (31-test inventory, `actions/checkout@v6`) to match the current 79-test suite and `@v7` workflow pins.
 - Add `docs-consistency.test.mjs` guards so README pin and maintenance baseline totals stay in sync.
 
 ## Follow-up issues filed
