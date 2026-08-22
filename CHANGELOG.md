@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.1.6] - 2026-08-22
+
+### Changed
+
+- Merge the 2026-08-22 managed OSS dependency and maintenance PR batch.
+
 ### Changed
 
 - Bump package version to `0.1.4` for the next patch release.
@@ -41,4 +47,3 @@ This project follows semantic versioning.
 - `/scheduled:configure` command — guide for configuration via agent.
 - `scheduled_router_config` tool — read / status / validate / save YAML config.
 - CI pipeline with typecheck, 31 tests, and npm pack check.
-

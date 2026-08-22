@@ -10,7 +10,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `SECURITY.md` | ✅ | Vulnerability reporting policy present |
 | `CODE_OF_CONDUCT.md` | ✅ | Present |
 | `CONTRIBUTING.md` | ✅ | Dev flow documented (`npm run ci`) |
-| `CHANGELOG.md` | ✅ | v0.1.5 current on `main` |
+| `CHANGELOG.md` | ✅ | v0.1.6 current on `main` |
 | README badges | ✅ | CI, Publish, npm version/downloads, License, Pi package, Trusted Publishing |
 | `docs/release.md` | ✅ | Trusted Publishing + auto-release handoff documented |
 | `.github/workflows/ci.yml` | ✅ | typecheck + test + pack:check + version:check on PRs |
@@ -51,7 +51,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## Docs freshness
 
-- README pin example, `package.json` version, and `docs-consistency.test.mjs` are aligned on `0.1.5`.
+- README pin example, `package.json` version, and `docs-consistency.test.mjs` are aligned on `0.1.6`.
 - CONTRIBUTING uses `npm run ci` (not `pnpm`); `package.json` has no `pnpm` scripts — npm is the canonical package manager.
 
 ## Fixes in this maintenance PR
