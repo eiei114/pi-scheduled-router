@@ -66,10 +66,10 @@ The next releases stay on `0.1.x` for hardening, then consolidate into `0.2.0`.
   final step with `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` plus a **literal backslash-n** suffix
   that corrupted the token for `gh release create` and `gh workflow run`. The stray suffix has been
   removed. → See [SEED-5](#seed-5--audit-and-fix-auto-releaseyml-token-line).
-- **Test-only matcher path ignores timezone.** `matchSlot(config, nowOverride)` uses
-  `nowOverride.getHours()` (local time) and ignores `config.timezone`. Harmless today because
-  the override is only used in tests, but it is an inconsistency that will bite if that path is
-  reused. → See [SEED-3](#seed-3--pin-or-fix-matchslot-nowoverride-timezone-handling).
+- **matchSlot nowOverride timezone (fixed).** Injected instants now flow through
+  `getNowInTimezone(config.timezone, referenceDate)` so overrides honor configured IANA zones.
+  Contract is documented on `matchSlot` and pinned by timezone-aware tests in
+  `tests/matcher.test.mjs`. → See [SEED-3](#seed-3--pin-or-fix-matchslot-nowoverride-timezone-handling).
 - **Sync I/O in async path (fixed).** `loadConfig` previously used blocking `readFileSync` while
   `ensureConfig` and the save path are async. → See [SEED-6](#seed-6--make-loadconfig-async).
 - **No formatter/linter.** Only `.editorconfig` is present; no Prettier/ESLint or format
@@ -134,19 +134,17 @@ independent and can be taken in any order unless noted.
 
 ### SEED-3 — Pin or fix `matchSlot` nowOverride timezone handling
 
-- **What.** `matchSlot(config, nowOverride)` (in `lib/matcher.ts`) calls
-  `nowOverride.getHours()` and **ignores `config.timezone`**. Decide the intended contract
-  and implement + test it: either (a) make the override honor the configured timezone, or
-  (b) keep current behavior and document/test it explicitly so the contract is pinned.
+- **What.** `matchSlot(config, nowOverride)` honors `config.timezone` by routing the reference
+  instant through `getNowInTimezone`. The contract is recorded in the `matchSlot` docstring.
 - **Why.** The test helper diverges from production timezone-aware matching; reusing the path
   would introduce a latent timezone bug.
 - **Scope.** ~30–45 min.
 - **Files.** `lib/matcher.ts`, `tests/matcher.test.mjs`.
 - **Acceptance.**
-  - [ ] Decision recorded in a code comment / docstring.
-  - [ ] Test(s) added that pin the chosen contract (e.g. override in a non-local timezone
+  - [x] Decision recorded in a code comment / docstring.
+  - [x] Test(s) added that pin the chosen contract (e.g. override in a non-local timezone
         config).
-  - [ ] `npm run ci` green.
+  - [x] `npm run ci` green.
 
 ### SEED-4 — Annotated example config + configuration reference doc
 
