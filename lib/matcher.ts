@@ -28,6 +28,14 @@ export function getNowInTimezone(
 /**
  * Match the current time against the configured slots (first-match wins).
  *
+ * **Timezone contract for `nowOverride`:** the reference instant is always
+ * `nowOverride ?? new Date()`. When `config.timezone` is set, that instant is
+ * converted to hour/minute in the configured IANA zone via `getNowInTimezone`
+ * (same path as production matching). When `timezone` is omitted, the reference
+ * uses the runner's local clock (`Date#getHours` / `#getMinutes`). Injecting a
+ * `Date` therefore honors configured timezones; it does not read local wall
+ * time when a zone is configured.
+ *
  * Returns the matching slot's provider/model, or `default` if no slot matches.
  * Returns `undefined` when config is falsy.
  */
