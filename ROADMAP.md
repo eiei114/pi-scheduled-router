@@ -136,8 +136,8 @@ independent and can be taken in any order unless noted.
 
 - **What.** `matchSlot(config, nowOverride)` honors `config.timezone` by routing the reference
   instant through `getNowInTimezone`. The contract is recorded in the `matchSlot` docstring.
-- **Why.** The test helper diverges from production timezone-aware matching; reusing the path
-  would introduce a latent timezone bug.
+- **Why.** `matchSlot` is the production matching path. The injected-`Date` path previously diverged from
+  production timezone-aware matching; preserving that divergence would reintroduce the timezone bug.
 - **Scope.** ~30–45 min.
 - **Files.** `lib/matcher.ts`, `tests/matcher.test.mjs`.
 - **Acceptance.**
