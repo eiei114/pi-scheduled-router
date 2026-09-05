@@ -4,24 +4,35 @@
 > The **Maintenance seeds** section lists bounded 30–90 minute tasks intended to become
 > future maintenance issues. Treat that section as the queue; everything above it is context.
 >
-> Last reviewed: 2026-06-16 (v0.1.1).
+> Last reviewed: 2026-09-05 (v0.1.6).
 
 ## Current status
 
 | Item | Value |
 |---|---|
-| Latest release | **v0.1.1** (2026-06-08), published to npm via Trusted Publishing |
-| Development phase | Initial development complete; early maintenance / hardening |
-| Next planned | Patch/minor hardening releases (0.1.x) toward a 0.2.0 feature release |
-| CI | typecheck + 38 node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
+| Latest release | **v0.1.6** (2026-08-22), published to npm via Trusted Publishing |
+| Development phase | Post-0.1.0 hardening complete; preparing for 0.2.0 feature consolidation |
+| Next planned | Patch/minor maintenance on `0.1.x`, then a `0.2.0` release with docs + UX polish |
+| CI | typecheck + **79** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
 | Release pipeline | `auto-release.yml` → tag/release → `publish.yml` (Trusted Publishing, no `NPM_TOKEN`) |
 
 `pi-scheduled-router` selects an AI provider/model at session start based on the time of
-day, driven by a YAML time-slot config. v0.1.x is functionally complete for its core
-promise (time → model). The roadmap below focuses on correctness, testability, docs, and
-CI hygiene rather than new features.
+day, driven by a YAML time-slot config. v0.1.x delivers the core promise (time → model) with
+strong validation, overlap warnings, extension test coverage, and timezone-aware matching.
+The roadmap below focuses on docs, edge-case coverage, CI hygiene, and small UX gaps rather
+than new routing features.
 
 ## What has shipped
+
+### v0.1.6 — 2026-08-22
+
+- Maintenance batch: dependency bumps (TypeScript 7, `@types/node`), masked-slot overlap
+  warnings surfaced in validate/save/status, extension command/tool test coverage, README
+  sponsor links, and `docs-consistency.test.mjs` guards for README pin + maintenance baseline.
+
+### v0.1.5 — 2026-08-04
+
+- Version bump for Discord release webhook verification.
 
 ### v0.1.1 — 2026-06-08
 
@@ -40,53 +51,56 @@ CI hygiene rather than new features.
 - Tool: `scheduled_router_config` (read / status / validate / save).
 - CI pipeline (typecheck, tests, pack check) and Trusted Publishing release workflow.
 
-Source issues behind v0.1.0 (the four initial development tracks):
+### Hardening landed on `main` since v0.1.1 (not yet called out in semver notes)
 
-1. `01-extension-scaffold-types-config` — extension scaffold, types, config loader.
-2. `02-slot-matcher` — slot matching semantics incl. day-spanning.
-3. `03-session-hook-model-selection` — session-start selection + fallback.
-4. `04-commands-tool-readme-release` — commands, tool, README, release pipeline.
+- **Masked-slot overlap warnings** — `analyzeSlotWarnings` flags identical, contained, and
+  day-spanning overlaps; surfaced via validate/save/status (formerly SEED-1).
+- **Extension test coverage** — hooks, commands, and config tool exercised in
+  `tests/extension-validate.test.mjs` (formerly SEED-2).
+- **`matchSlot` timezone contract** — injected `Date` values honor `config.timezone` via
+  `getNowInTimezone`; pinned by tests and docstring (formerly SEED-3, PR #51).
+- **Async `loadConfig`** — uses `fs/promises` `readFile`; awaited at all call sites
+  (formerly SEED-6).
+- **Zero-duration slot rejection** — invalid `from === to` ranges rejected at validation.
+- **DST transition coverage** — spring-forward / fall-back cases for `America/New_York`.
+- **Maintenance health baseline** — `docs/maintenance-health-check.md` + drift guards.
 
-## Short-term goals (next 2–3 releases)
+## Short-term goals (next 1–2 releases)
 
-The next releases stay on `0.1.x` for hardening, then consolidate into `0.2.0`.
+Focus for upcoming `0.1.x` patches and the planned `0.2.0` minor:
 
-1. **Correctness & observability of config.** Surface hidden state in configs (overlapping
-   slots, unintentional gaps) so users can tell *why* a slot does or does not fire.
-2. **Close the test/coverage gap for user-facing surfaces.** The matcher and config loader
-   are well tested; the extension entrypoint (hooks, commands, tool) is not.
-3. **Onboarding & docs.** Provide a copyable, annotated example config and a dedicated
-   configuration reference.
-4. **CI hygiene.** Verify the release workflow actually creates GitHub Releases (see
-   technical debt) and keep the version-bump guard healthy.
+1. **Onboarding docs.** Ship an annotated example config and a dedicated configuration
+   reference so users do not rely on the README snippet alone.
+2. **Timezone edge-case coverage.** Extend matcher tests beyond whole-hour zones and US DST
+   to non-standard offsets (e.g. `Asia/Kolkata` +05:30).
+3. **CI hygiene.** Optional formatter check; confirm auto-release GitHub Release step works
+   end-to-end after the token-line fix.
+4. **Keep maintenance baselines fresh.** After each release, sync this file, `CHANGELOG.md`,
+   and `docs/maintenance-health-check.md` so the seed planner sees accurate context.
 
 ## Known technical debt
 
-- **Release workflow token bug (fixed).** `.github/workflows/auto-release.yml` previously ended its
-  final step with `env: GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` plus a **literal backslash-n** suffix
-  that corrupted the token for `gh release create` and `gh workflow run`. The stray suffix has been
-  removed. → See [SEED-5](#seed-5--audit-and-fix-auto-releaseyml-token-line).
-- **matchSlot nowOverride timezone (fixed).** Injected instants now flow through
-  `getNowInTimezone(config.timezone, referenceDate)` so overrides honor configured IANA zones.
-  Contract is documented on `matchSlot` and pinned by timezone-aware tests in
-  `tests/matcher.test.mjs`. → See [SEED-3](#seed-3--pin-or-fix-matchslot-nowoverride-timezone-handling).
-- **Sync I/O in async path (fixed).** `loadConfig` previously used blocking `readFileSync` while
-  `ensureConfig` and the save path are async. → See [SEED-6](#seed-6--make-loadconfig-async).
+- **Release workflow token bug (fixed).** Stray literal `\n` suffix removed from
+  `auto-release.yml` `GH_TOKEN` line. End-to-end verification in Actions history is still
+  outstanding. → See [SEED-5](#seed-5--verify-auto-releaseyml-github-release-step).
+- **matchSlot nowOverride timezone (fixed).** Contract documented and test-pinned.
+- **Sync I/O in async path (fixed).** `loadConfig` is async.
 - **No formatter/linter.** Only `.editorconfig` is present; no Prettier/ESLint or format
-  check in CI. Style drift is caught only by `tsc`.
+  check in CI. → See [SEED-7](#seed-7-optional-lower-priority--add-a-formatlint-check-to-ci).
 - **README example is the only config example.** No annotated, copyable example file and no
-  dedicated config reference doc.
+  dedicated config reference doc. → See [SEED-4](#seed-4--annotated-example-config--configuration-reference-doc).
+- **Non-whole-hour timezone gaps.** No assertions for offsets like +05:30 or +12:45.
+  → See [SEED-8](#seed-8--non-whole-hour-timezone-test-coverage).
 
 ## Areas needing improvement
 
-- **Docs** — only `docs/release.md` exists. Add a configuration reference and an annotated
-  example config.
-- **Tests** — matcher/config coverage is strong; extension (commands/tool/hooks) coverage is
-  zero. `paths.ts` is exercised indirectly via `resolveConfigPath` but not unit-tested in
-  isolation.
-- **Config UX** — no detection of overlapping or duplicate slots; first-match-wins silently
-  masks later slots. Validation only checks individual entries, not their interaction.
-- **CI** — release-workflow reliability (above) and optional format check.
+- **Docs** — `docs/release.md` and `docs/maintenance-health-check.md` exist; still missing a
+  configuration reference and annotated example config.
+- **Tests** — 79 tests across matcher, config, extension, session-start, status, and docs
+  consistency. `lib/paths.ts` is exercised indirectly but has no dedicated unit file.
+- **Config UX** — overlap warnings exist; no guided reorder/split suggestions beyond the
+  warning text.
+- **CI** — release-workflow verification and optional format check remain open.
 
 ---
 
@@ -96,102 +110,40 @@ Candidate maintenance issues for future weekly seeds. Each is scoped to **30–9
 written with enough context (what / why / acceptance) to be picked up directly. Seeds are
 independent and can be taken in any order unless noted.
 
-### SEED-1 — Detect overlapping / duplicate time slots in config validation
-
-- **What.** `validateConfig` (`lib/config.ts`) validates each slot independently but never
-  compares slots. Add a check that flags **fully-overlapping or identical** `from`–`to`
-  ranges (the case where first-match-wins silently masks a later slot). Report overlaps as a
-  warning/info from the `validate` action of the `scheduled_router_config` tool, without
-  changing match behavior.
-- **Why.** Users cannot tell why a configured slot never fires. Overlaps are the most common
-  cause and are currently invisible.
-- **Scope.** ~45–60 min.
-- **Files.** `lib/config.ts` (new check + tests in `tests/config.test.mjs`); surface in
-  `extensions/index.ts` tool `validate` result.
-- **Acceptance.**
-  - [ ] Overlap/duplicate detection implemented and unit-tested (overlap, identical range, and
-        clean multi-slot configs).
-  - [ ] `validate` action reports overlaps without rejecting a technically-valid config.
-  - [ ] Matching behavior unchanged; all existing tests still pass; `npm run ci` green.
-
-### SEED-2 — Unit tests for the extension (hooks, commands, tool)
-
-- **What.** `extensions/index.ts` has no tests. Add a test file that drives the extension
-  through a lightweight mock `ExtensionAPI` / `ExtensionContext` and covers:
-  - `formatStatus()` output for matched slot, default (no match), and not-configured states.
-  - `/scheduled:status` and `/scheduled:configure` command handlers (configure sends the
-    prompt via `pi.sendUserMessage`).
-  - `scheduled_router_config` tool: `read` (found / not configured), `status`, `validate`
-    (valid + invalid YAML + schema error), and `save` (confirm yes/no, writes file, reloads,
-    reselects). Include the model-not-found → default fallback path in `trySelectModel`.
-- **Why.** All user-facing behavior is untested; refactors silently risk regressions.
-- **Scope.** ~60–90 min.
-- **Files.** new `tests/extension.test.mjs`; mirror the `mockCtx` pattern already in
-  `tests/config.test.mjs`.
-- **Acceptance.**
-  - [ ] New test file covering the cases above.
-  - [ ] `npm run ci` green with no real Pi runtime required (fully mocked).
-
-### SEED-3 — Pin or fix `matchSlot` nowOverride timezone handling
-
-- **What.** `matchSlot(config, nowOverride)` honors `config.timezone` by routing the reference
-  instant through `getNowInTimezone`. The contract is recorded in the `matchSlot` docstring.
-- **Why.** `matchSlot` is the production matching path. The injected-`Date` path previously diverged from
-  production timezone-aware matching; preserving that divergence would reintroduce the timezone bug.
-- **Scope.** ~30–45 min.
-- **Files.** `lib/matcher.ts`, `tests/matcher.test.mjs`.
-- **Acceptance.**
-  - [x] Decision recorded in a code comment / docstring.
-  - [x] Test(s) added that pin the chosen contract (e.g. override in a non-local timezone
-        config).
-  - [x] `npm run ci` green.
-
 ### SEED-4 — Annotated example config + configuration reference doc
 
 - **What.** Add a copyable, commented example config (e.g.
   `docs/examples/scheduled-router.example.yaml`) covering timezone, a normal slot, a
   day-spanning slot, and the required `default`. Add `docs/configuration.md` documenting every
-  field, first-match-wins semantics, `from` inclusive / `to` exclusive, `24:00` support, and
-  the config resolution order (project `.pi/` overrides the agent dir). Link to it from the
-  README.
+  field, first-match-wins semantics, `from` inclusive / `to` exclusive, `24:00` support,
+  overlap-warning behavior, and the config resolution order (project `.pi/` overrides the agent
+  dir). Link to it from the README.
 - **Why.** The only example today is an un-annotated snippet in the README; semantics are
   scattered. Improves onboarding and reduces misconfigured-slot support load.
 - **Scope.** ~45–60 min.
 - **Files.** new `docs/examples/scheduled-router.example.yaml`, new `docs/configuration.md`,
-  `README.md` (link), `package.json` `files` already includes `docs/`.
+  `README.md` (link). `package.json` `files` already includes `docs/`.
 - **Acceptance.**
   - [ ] Example file present and valid against `validateConfig`.
-  - [ ] `docs/configuration.md` documents all fields + resolution order.
+  - [ ] `docs/configuration.md` documents all fields + resolution order + overlap warnings.
   - [ ] README links to the new doc; `npm run ci` (incl. `pack:check`) green.
 
-### SEED-5 — Audit and fix `auto-release.yml` token line
+### SEED-5 — Verify `auto-release.yml` GitHub Release step
 
-- **What.** `.github/workflows/auto-release.yml` final step had a **literal `\n`** (backslash-n)
-  suffix on `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`, corrupting the token used by
-  `gh release create` and `gh workflow run`. The stray suffix has been removed.
-- **Why.** Suspected silent CI bug. npm publishes still work via the `v*.*.*` tag trigger, so
-  it hides easily, but the auto-created GitHub Release + dispatch handoff is likely broken.
+- **What.** The stray literal `\n` on the `GH_TOKEN` line in `.github/workflows/auto-release.yml`
+  has been removed. Confirm via Actions run history (or a controlled dry observation) that
+  `gh release create` and the publish dispatch succeed with a valid token. Document the outcome
+  in `docs/release.md` if behavior differs from expectations.
+- **Why.** npm publishes still work via the `v*.*.*` tag trigger, so a broken Release step
+  hides easily; operators need confidence the handoff is healthy.
 - **Scope.** ~30–45 min.
-- **Files.** `.github/workflows/auto-release.yml`; optionally a note in `docs/release.md`.
+- **Files.** `.github/workflows/auto-release.yml` (read-only unless a fix is needed),
+  `docs/release.md` (note).
 - **Acceptance.**
-  - [x] Stray trailing `\n` removed; line ends with `}}`.
-  - [ ] Verified (via Actions run history or a dry observation) that the `gh release` step runs
-        with a valid token — or documented why it was already working.
-  - [ ] `npm run ci` green; no accidental change to the dispatch handoff contract described in
-        `docs/release.md`.
-
-### SEED-6 — Make `loadConfig` async
-
-- **What.** `loadConfig` (`lib/config.ts`) reads the config with blocking `readFileSync`
-  while its caller `ensureConfig` (`extensions/index.ts`) and the `save` path are already
-  async. Convert `loadConfig` to async (`fs/promises` `readFile`) and update callers and tests.
-- **Why.** Removes blocking I/O from the `session_start` hook and resolves the sync/async
-  inconsistency.
-- **Scope.** ~30–45 min.
-- **Files.** `lib/config.ts`, `extensions/index.ts` (`ensureConfig`), `tests/config.test.mjs`.
-- **Acceptance.**
-  - [x] `loadConfig` is async and awaited at all call sites.
-  - [ ] Tests updated to `await`; behavior unchanged; `npm run ci` green.
+  - [ ] Evidence recorded (Actions log excerpt or written observation) that the release step
+        completes with a valid token.
+  - [ ] `docs/release.md` updated if the handoff contract needs clarification.
+  - [ ] No accidental change to the dispatch contract; `npm run ci` green.
 
 ### SEED-7 (optional, lower priority) — Add a format/lint check to CI
 
@@ -203,13 +155,67 @@ independent and can be taken in any order unless noted.
   - [ ] Prettier config added; existing files pass `prettier --check`.
   - [ ] `format:check` runs in CI; `npm run ci` green.
 
+### SEED-8 — Non-whole-hour timezone test coverage
+
+- **What.** Add matcher tests for at least one non-whole-hour IANA zone (e.g. `Asia/Kolkata`
+  +05:30) and optionally a quarter-hour offset (e.g. `Pacific/Chatham` +12:45). Assert
+  `getNowInTimezone` + `matchSlot` select the expected slot at a boundary instant.
+- **Why.** Current DST coverage uses `America/New_York`; fractional-hour zones are a common
+  real-world gap called out in `docs/maintenance-health-check.md`.
+- **Scope.** ~30–45 min.
+- **Files.** `tests/matcher.test.mjs`; optionally a short note in `docs/maintenance-health-check.md`.
+- **Acceptance.**
+  - [ ] At least one +05:30 (or similar) test added and passing.
+  - [ ] `npm run ci` green; no change to production matching semantics unless a bug is found
+        (if so, fix + changelog note in the same PR).
+
+### SEED-9 — Unit tests for `lib/paths.ts`
+
+- **What.** Extract or mirror the `resolveConfigPath` scenarios already in `tests/config.test.mjs`
+  into a focused `tests/paths.test.mjs` (or expand config tests) covering project-vs-agent
+  precedence, missing files, and symlink/relative edge cases if applicable.
+- **Why.** Path resolution is security-sensitive (which config file wins) but only tested
+  indirectly today; a dedicated file makes regressions obvious.
+- **Scope.** ~30–45 min.
+- **Files.** new `tests/paths.test.mjs`, `lib/paths.ts` (read-only unless bug found).
+- **Acceptance.**
+  - [ ] Dedicated tests for all documented resolution-order cases.
+  - [ ] `npm run ci` green; maintenance-health-check test total updated if counts change.
+
+### SEED-10 — ROADMAP drift guard in docs-consistency tests
+
+- **What.** Extend `tests/docs-consistency.test.mjs` to assert that `ROADMAP.md` **Current
+  status** table matches `package.json` version and that the documented test total matches
+  `npm test` count (mirroring the maintenance-health-check guard).
+- **Why.** This file is the seed planner's primary input; stale version or test counts cause
+  the planner to skip or mis-scope weekly seeds (the original DOT-1009 trigger).
+- **Scope.** ~30–45 min.
+- **Files.** `tests/docs-consistency.test.mjs`, `ROADMAP.md` (ensure fields are parseable).
+- **Acceptance.**
+  - [ ] Test fails if ROADMAP version or test count drifts from repo truth.
+  - [ ] `npm run ci` green.
+
+---
+
+## Promoted / completed seeds (archive)
+
+These seeds are done on `main`. Keep for history; do not re-queue unless scope regresses.
+
+| Seed | Summary | Status |
+|---|---|---|
+| SEED-1 | Masked-slot overlap warnings | ✅ Done (v0.1.6 batch) |
+| SEED-2 | Extension hooks/commands/tool tests | ✅ Done (`extension-validate.test.mjs`) |
+| SEED-3 | `matchSlot` nowOverride timezone contract | ✅ Done (PR #51) |
+| SEED-6 | Async `loadConfig` | ✅ Done |
+
 ---
 
 ## How to update this file
 
-- When a seed is promoted to an issue, move it out of **Maintenance seeds** (or mark it
+- When a seed is promoted to an issue, move it to **Promoted / completed seeds** (or mark
   **promoted → &lt;issue key&gt;**) and add any new gap discovered during that work as a fresh
-  seed.
+  seed under **Maintenance seeds**.
 - Keep **Current status** and **What has shipped** in sync with `package.json` version and
   `CHANGELOG.md` after each release.
 - Prefer adding 30–90 minute, well-scoped seeds over open-ended goals.
+- After editing, run `npm run ci` and confirm the test total here matches `npm test` output.
