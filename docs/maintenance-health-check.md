@@ -19,7 +19,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## CI verification
 
-- **Local `npm run ci`:** pass (typecheck, 79 tests, `npm pack --dry-run`).
+- **Local `npm run ci`:** pass (typecheck, 81 tests, `npm pack --dry-run`).
 - **Workflow pinning:** `actions/checkout@v7`, `actions/setup-node@v7`.
 
 ## Test inventory
@@ -56,7 +56,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## Fixes in this maintenance PR
 
-- Refresh stale 2026-07 maintenance baseline (31-test inventory, `actions/checkout@v6`) to match the current 79-test suite and `@v7` workflow pins.
+- Refresh stale 2026-07 maintenance baseline (31-test inventory, `actions/checkout@v6`) to match the current 81-test suite and `@v7` workflow pins.
 - Add `docs-consistency.test.mjs` guards so README pin and maintenance baseline totals stay in sync.
 
 ## Follow-up issues filed
