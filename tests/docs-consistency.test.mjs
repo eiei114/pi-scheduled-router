@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { load as parseYaml } from "js-yaml";
+import { validateConfig } from "../lib/config.ts";
 
 function readMaintenanceHealthCheck() {
   return readFileSync("docs/maintenance-health-check.md", "utf8");
@@ -15,6 +17,30 @@ function countDeclaredTests() {
       return total + [...source.matchAll(/^test\(/gm)].length;
     }, 0);
 }
+
+test("example config validates against validateConfig", () => {
+  const examplePath = "docs/examples/scheduled-router.example.yaml";
+  const parsed = parseYaml(readFileSync(examplePath, "utf8"));
+  const validated = validateConfig(parsed);
+
+  assert.equal(validated.version, 1);
+  assert.equal(validated.timezone, "Asia/Tokyo");
+  assert.equal(validated.slots.length, 3);
+  assert.equal(validated.default.provider, "deepseek");
+});
+
+test("README links to configuration reference docs", () => {
+  const readme = readFileSync("README.md", "utf8");
+
+  assert.ok(
+    readme.includes("docs/examples/scheduled-router.example.yaml"),
+    "README should link to the annotated example config",
+  );
+  assert.ok(
+    readme.includes("docs/configuration.md"),
+    "README should link to docs/configuration.md",
+  );
+});
 
 test("README pin example matches package.json version", () => {
   const { version } = JSON.parse(readFileSync("package.json", "utf8"));
