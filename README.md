@@ -90,6 +90,8 @@ slots:
 
 **Overlap warnings:** Slots are evaluated in order and first match wins. If a later slot is fully covered by earlier slots (for example duplicate ranges, `09:00`–`17:00` before `13:00`–`15:00`, or covered day-spanning slots such as `22:00`–`02:00`), the config is still valid but `scheduled_router_config validate`, `scheduled_router_config save`, and `/scheduled:status`/tool `status` show a `Config warnings:` summary so you can reorder or split slots.
 
+For a fully annotated example and field-by-field reference, see [`docs/examples/scheduled-router.example.yaml`](docs/examples/scheduled-router.example.yaml) and [`docs/configuration.md`](docs/configuration.md).
+
 Or use `/scheduled:configure` to set up time slots interactively with your agent.
 
 ## Commands

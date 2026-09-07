@@ -31,9 +31,9 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `tests/session-start.test.mjs` | 7 | Session-start model selection and fallbacks |
 | `tests/status.test.mjs` | 5 | Status formatting and config warnings |
 | `tests/extension-validate.test.mjs` | 12 | Extension hooks, commands, status/configure flows, and config tool operations |
-| `tests/docs-consistency.test.mjs` | 3 | README pin + maintenance baseline drift guard |
+| `tests/docs-consistency.test.mjs` | 5 | README pin + example config validation + maintenance baseline drift guard |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
-| **Total** | **79** | **79 pass / 0 fail** |
+| **Total** | **81** | **81 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 

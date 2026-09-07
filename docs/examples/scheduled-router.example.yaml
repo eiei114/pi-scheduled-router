@@ -1,0 +1,39 @@
+# scheduled-router.example.yaml — annotated example for pi-scheduled-router
+#
+# Copy to one of:
+#   ~/.pi/scheduled-router.yaml          (agent-wide default)
+#   <project>/.pi/scheduled-router.yaml  (project override; wins when present)
+#
+# Full field reference: docs/configuration.md
+
+version: 1
+
+# IANA timezone used when matching slots (optional).
+# Omit to use the system local clock.
+timezone: "Asia/Tokyo"
+
+# Required fallback when no slot matches the current time.
+default:
+  provider: deepseek
+  model: deepseek-v4-pro
+
+# Slots are evaluated top-to-bottom; the first matching slot wins.
+# Times use HH:MM with from inclusive and to exclusive.
+slots:
+  # Normal same-day range: active from 10:00 up to (but not including) 15:00.
+  - from: "10:00"
+    to: "15:00"
+    provider: cursor
+    model: composer-2.5
+
+  # Another normal range covering the afternoon and early evening.
+  - from: "15:00"
+    to: "22:00"
+    provider: openai-codex
+    model: gpt-5.4
+
+  # Day-spanning range: 22:00 through midnight into 02:00 the next calendar day.
+  - from: "22:00"
+    to: "02:00"
+    provider: anthropic
+    model: claude-opus-4
