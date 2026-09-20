@@ -37,3 +37,23 @@ slots:
     to: "02:00"
     provider: anthropic
     model: claude-opus-4
+
+# ── Validation examples ──
+# Keep these snippets commented out; they show what validation accepts or rejects.
+#
+# Valid boundary value: "24:00" may be used only as an end-of-day boundary.
+#   to: "24:00"
+#
+# Invalid time values:
+#   from: "24:30"  # hour 24 must use minute 00
+#   to: "10:60"    # minutes must be 00-59
+#
+# Invalid zero-duration slot:
+#   from: "10:00"
+#   to: "10:00"
+#
+# Invalid top-level key:
+#   route_name: "work-hours"  # only version, timezone, default, and slots are allowed
+#
+# Warning-only overlap: a later 13:00-15:00 slot after an earlier 09:00-17:00
+# slot validates, but is fully masked because slots are first-match-wins.

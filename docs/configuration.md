@@ -93,6 +93,57 @@ Warning examples:
 
 Warnings do not block saving or session start. They indicate a later slot will never match because an earlier slot already covers those minutes.
 
+## Validation examples
+
+The annotated sample in [`examples/scheduled-router.example.yaml`](examples/scheduled-router.example.yaml) includes commented validation snippets. Use these examples when checking a schedule before saving it.
+
+Valid boundary time:
+
+```yaml
+slots:
+  - from: "15:00"
+    to: "24:00" # allowed end-of-day boundary
+    provider: openai-codex
+    model: gpt-5.4
+```
+
+Invalid time values:
+
+```yaml
+slots:
+  - from: "24:30" # hour 24 must use minute 00
+    to: "10:60"   # minutes must be 00-59
+    provider: cursor
+    model: composer-2.5
+```
+
+Invalid zero-duration slot:
+
+```yaml
+slots:
+  - from: "10:00"
+    to: "10:00" # rejected: from and to must differ
+    provider: cursor
+    model: composer-2.5
+```
+
+Invalid top-level key:
+
+```yaml
+version: 1
+route_name: "work-hours" # rejected: only version, timezone, default, and slots are allowed
+default:
+  provider: deepseek
+  model: deepseek-v4-pro
+slots:
+  - from: "10:00"
+    to: "15:00"
+    provider: cursor
+    model: composer-2.5
+```
+
+Overlap warnings are not validation failures. For example, a later `13:00`–`15:00` slot after an earlier `09:00`–`17:00` slot is valid, but the later slot is fully masked by first-match-wins ordering.
+
 ## Validation errors
 
 Common validation failures:
