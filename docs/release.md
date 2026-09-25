@@ -26,6 +26,12 @@ Publishing also runs when a GitHub Release is published, and can be run manually
 
 The workflow skips `name@version` if that exact package version already exists on npm.
 
+## Verification evidence
+
+The successful v0.1.6 release run (`32579537651`) created the GitHub Release and explicitly dispatched `publish.yml` for `v0.1.6`; the dispatched run (`32579546171`) completed successfully and confirmed that `pi-scheduled-router@0.1.6` was already published. This confirms the documented release-to-publish handoff without changing its contract.
+
+The v0.1.6 release body still contains literal `\\n` sequences. The current `auto-release.yml` source also still constructs `NOTES` with `\\n`, so post-fix behavior cannot be verified from this evidence; a future version bump is required after that fix is present on `main`.
+
 ## Workflow guardrail
 
 Do not ship a new Pi OSS package or version bump with only `package.json` changes.
