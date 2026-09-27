@@ -10,7 +10,7 @@
 
 | Item | Value |
 |---|---|
-| Latest release | **v0.1.6** (2026-08-22), published to npm via Trusted Publishing |
+| Latest release | **0.1.11** (2026-08-22), published to npm via Trusted Publishing |
 | Development phase | Post-0.1.0 hardening complete; preparing for 0.2.0 feature consolidation |
 | Next planned | Patch/minor maintenance on `0.1.x`, then a `0.2.0` release with docs + UX polish |
 | CI | typecheck + **79** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
