@@ -77,6 +77,20 @@ Put broader or higher-priority ranges before narrower ones. Reorder slots if ove
 
 When `timezone` is set, the current instant is converted to hour/minute in that IANA zone before matching. When omitted, the runner's local clock is used.
 
+## Dry-run validation and route matching
+
+Use `scheduled_router_config` with `action: validate` to dry-run a candidate config without writing it or changing the selected model:
+
+```yaml
+version: 1
+timezone: "Asia/Tokyo"
+default: { provider: deepseek, model: deepseek-v4-pro }
+slots:
+  - { from: "09:00", to: "17:00", provider: cursor, model: composer-2.5 }
+```
+
+Pass the complete YAML as `configYaml`. A valid result confirms the schema and reports any masked-slot warnings; it does not evaluate a route. Use `/scheduled:status` (or `action: status`) to evaluate the currently loaded config at the current instant. The configured timezone determines the wall-clock time used for matching. If no slot matches, matching succeeds with `default` and status reports `No slot matched, using default: <provider>/<model>`.
+
 ## Overlap warnings
 
 Configs with overlapping or duplicate ranges remain **valid**, but the router detects slots that are fully covered by earlier entries and emits **masked-slot** warnings via:
