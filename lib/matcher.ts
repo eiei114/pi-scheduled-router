@@ -6,6 +6,8 @@ function parseMinutes(value: string): number {
   return h * 60 + m;
 }
 
+const timezoneFormatters = new Map<string, Intl.DateTimeFormat>();
+
 /** Get hour/minute for a date in a target IANA timezone (or system local). */
 export function getNowInTimezone(
   tz?: string,
@@ -15,12 +17,16 @@ export function getNowInTimezone(
     return { hours: date.getHours(), minutes: date.getMinutes() };
   }
 
-  const formatter = new Intl.DateTimeFormat("en", {
-    timeZone: tz,
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  });
+  let formatter = timezoneFormatters.get(tz);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    timezoneFormatters.set(tz, formatter);
+  }
   const [hours, minutes] = formatter.format(date).split(":").map(Number);
   return { hours, minutes };
 }
