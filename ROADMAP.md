@@ -4,16 +4,16 @@
 > The **Maintenance seeds** section lists bounded 30–90 minute tasks intended to become
 > future maintenance issues. Treat that section as the queue; everything above it is context.
 >
-> Last reviewed: 2026-09-05 (v0.1.6).
+> Last reviewed: 2026-10-06 (v0.1.12).
 
 ## Current status
 
 | Item | Value |
 |---|---|
-| Latest release | **0.1.11** (2026-08-22), published to npm via Trusted Publishing |
-| Development phase | Post-0.1.0 hardening complete; preparing for 0.2.0 feature consolidation |
-| Next planned | Patch/minor maintenance on `0.1.x`, then a `0.2.0` release with docs + UX polish |
-| CI | typecheck + **79** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
+| Latest release | **0.1.12** (2026-10-01), published through the Trusted Publishing release flow |
+| Development phase | Post-0.1.0 hardening complete; maintenance and edge-case coverage before 0.2.0 |
+| Next planned | Add non-whole-hour timezone coverage, then refresh the roadmap/test drift guard before 0.2.0 planning |
+| CI | typecheck + **81** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
 | Release pipeline | `auto-release.yml` → tag/release → `publish.yml` (Trusted Publishing, no `NPM_TOKEN`) |
 
 `pi-scheduled-router` selects an AI provider/model at session start based on the time of
@@ -64,19 +64,21 @@ than new routing features.
 - **Zero-duration slot rejection** — invalid `from === to` ranges rejected at validation.
 - **DST transition coverage** — spring-forward / fall-back cases for `America/New_York`.
 - **Maintenance health baseline** — `docs/maintenance-health-check.md` + drift guards.
+- **SDK maintenance** — updated `@earendil-works/pi-*` dependencies to `0.99.1` in v0.1.12.
+- **Status documentation** — documented dry-run route matching and linked the configuration reference.
 
 ## Short-term goals (next 1–2 releases)
 
 Focus for upcoming `0.1.x` patches and the planned `0.2.0` minor:
 
-1. **Onboarding docs.** Ship an annotated example config and a dedicated configuration
-   reference so users do not rely on the README snippet alone.
-2. **Timezone edge-case coverage.** Extend matcher tests beyond whole-hour zones and US DST
+1. **Timezone edge-case coverage.** Extend matcher tests beyond whole-hour zones and US DST
    to non-standard offsets (e.g. `Asia/Kolkata` +05:30).
-3. **CI hygiene.** Optional formatter check; confirm auto-release GitHub Release step works
-   end-to-end after the token-line fix.
+2. **Roadmap drift protection.** Add a consistency check for this file's package version and
+   test total so weekly seeds are based on repository truth.
+3. **CI hygiene.** Consider an optional formatter check and verify the post-fix auto-release
+   GitHub Release handoff on a future version bump.
 4. **Keep maintenance baselines fresh.** After each release, sync this file, `CHANGELOG.md`,
-   and `docs/maintenance-health-check.md` so the seed planner sees accurate context.
+   and `docs/maintenance-health-check.md`.
 
 ## Known technical debt
 
@@ -87,17 +89,17 @@ Focus for upcoming `0.1.x` patches and the planned `0.2.0` minor:
 - **Sync I/O in async path (fixed).** `loadConfig` is async.
 - **No formatter/linter.** Only `.editorconfig` is present; no Prettier/ESLint or format
   check in CI. → See [SEED-7](#seed-7-optional-lower-priority--add-a-formatlint-check-to-ci).
-- **README example is the only config example.** No annotated, copyable example file and no
-  dedicated config reference doc. → See [SEED-4](#seed-4--annotated-example-config--configuration-reference-doc).
+- **Maintenance health baseline is stale.** It still names v0.1.6 and should be refreshed for
+  the v0.1.12 release. → See [SEED-11](#seed-11--refresh-maintenance-health-baseline).
 - **Non-whole-hour timezone gaps.** No assertions for offsets like +05:30 or +12:45.
   → See [SEED-8](#seed-8--non-whole-hour-timezone-test-coverage).
 
 ## Areas needing improvement
 
-- **Docs** — `docs/release.md` and `docs/maintenance-health-check.md` exist; still missing a
-  configuration reference and annotated example config.
-- **Tests** — 79 tests across matcher, config, extension, session-start, status, and docs
-  consistency. `lib/paths.ts` is exercised indirectly but has no dedicated unit file.
+- **Docs** — the configuration reference and annotated example are now shipped; the
+  maintenance-health baseline still needs a v0.1.12 refresh.
+- **Tests** — 81 tests cover matcher, config, extension, session-start, status, smoke, and
+  docs consistency. `lib/paths.ts` is exercised indirectly but has no dedicated unit file.
 - **Config UX** — overlap warnings exist; no guided reorder/split suggestions beyond the
   warning text.
 - **CI** — release-workflow verification and optional format check remain open.
@@ -110,23 +112,24 @@ Candidate maintenance issues for future weekly seeds. Each is scoped to **30–9
 written with enough context (what / why / acceptance) to be picked up directly. Seeds are
 independent and can be taken in any order unless noted.
 
-### SEED-4 — Annotated example config + configuration reference doc
+### SEED-11 — Refresh maintenance health baseline
 
-- **What.** Add a copyable, commented example config (e.g.
-  `docs/examples/scheduled-router.example.yaml`) covering timezone, a normal slot, a
-  day-spanning slot, and the required `default`. Add `docs/configuration.md` documenting every
-  field, first-match-wins semantics, `from` inclusive / `to` exclusive, `24:00` support,
-  overlap-warning behavior, and the config resolution order (project `.pi/` overrides the agent
-  dir). Link to it from the README.
-- **Why.** The only example today is an un-annotated snippet in the README; semantics are
-  scattered. Improves onboarding and reduces misconfigured-slot support load.
-- **Scope.** ~45–60 min.
-- **Files.** new `docs/examples/scheduled-router.example.yaml`, new `docs/configuration.md`,
-  `README.md` (link). `package.json` `files` already includes `docs/`.
+- **What.** Update `docs/maintenance-health-check.md` for v0.1.12, the current 81-test
+  inventory, current release notes, and the latest workflow evidence.
+- **Why.** The health baseline is still labeled 2026-W32 / v0.1.6, so it can mislead the
+  weekly seed planner even though the drift tests remain green.
+- **Scope.** ~30–45 min.
+- **Files.** `docs/maintenance-health-check.md` (and tests only if the baseline format changes).
 - **Acceptance.**
-  - [ ] Example file present and valid against `validateConfig`.
-  - [ ] `docs/configuration.md` documents all fields + resolution order + overlap warnings.
-  - [ ] README links to the new doc; `npm run ci` (incl. `pack:check`) green.
+  - [ ] Release/version and test inventory match repository truth.
+  - [ ] `npm run ci` green; no production or release action performed.
+
+### SEED-4 — Annotated example config + configuration reference doc (completed)
+
+- **What.** Add a copyable, commented example config and a dedicated configuration reference.
+- **Why.** Improves onboarding and reduces misconfigured-slot support load.
+- **Result.** ✅ Done on `main`: `docs/examples/scheduled-router.example.yaml`,
+  `docs/configuration.md`, README links, and docs-consistency coverage are present.
 
 ### SEED-5 — Verify `auto-release.yml` GitHub Release step
 
