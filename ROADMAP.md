@@ -4,7 +4,7 @@
 > The **Maintenance seeds** section lists bounded 30–90 minute tasks intended to become
 > future maintenance issues. Treat that section as the queue; everything above it is context.
 >
-> Last reviewed: 2026-09-05 (v0.1.6).
+> Last reviewed: 2026-10-08 (2026-W41).
 
 ## Current status
 
@@ -64,6 +64,18 @@ than new routing features.
 - **Zero-duration slot rejection** — invalid `from === to` ranges rejected at validation.
 - **DST transition coverage** — spring-forward / fall-back cases for `America/New_York`.
 - **Maintenance health baseline** — `docs/maintenance-health-check.md` + drift guards.
+
+## Roadmap review — 2026-W41
+
+The roadmap source is present and has been refreshed against the current `main` branch
+(release `0.1.5`). The next bounded maintenance candidates are:
+
+1. **SEED-1** — Detect overlapping / duplicate time slots in config validation.
+2. **SEED-2** — Unit tests for the extension (hooks, commands, tool).
+3. **SEED-3** — Pin or fix `matchSlot` nowOverride timezone handling.
+
+These candidates are already recorded in the maintenance backlog below; no
+implementation or release action is part of this roadmap refresh.
 
 ## Short-term goals (next 1–2 releases)
 
