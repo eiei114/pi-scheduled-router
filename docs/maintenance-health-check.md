@@ -19,7 +19,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## CI verification
 
-- **Local `npm run ci`:** pass (typecheck, 81 tests, `npm pack --dry-run`).
+- **Local `npm run ci`:** pass (typecheck, 87 tests, actual Pi SDK smoke, `npm pack --dry-run`).
 - **Workflow pinning:** `actions/checkout@v7`, `actions/setup-node@v7`.
 
 ## Test inventory
@@ -33,7 +33,8 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `tests/extension-validate.test.mjs` | 12 | Extension hooks, commands, status/configure flows, and config tool operations |
 | `tests/docs-consistency.test.mjs` | 5 | README pin + example config validation + maintenance baseline drift guard |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
-| **Total** | **81** | **81 pass / 0 fail** |
+| `tests/pi-sdk-smoke-contract.test.mjs` | 6 | Actual Pi smoke assertion contract and negative fixtures |
+| **Total** | **87** | **87 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 
