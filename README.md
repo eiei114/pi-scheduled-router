@@ -38,7 +38,7 @@ pi install npm:pi-scheduled-router
 Pin a specific version:
 
 ```bash
-pi install npm:pi-scheduled-router@0.1.12
+pi install npm:pi-scheduled-router@0.1.13
 ```
 
 Install into the current project instead of your user Pi settings:
