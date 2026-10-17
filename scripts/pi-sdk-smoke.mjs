@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -122,6 +122,26 @@ function createFixture(invalidConfig = false) {
   return { fixtureRoot, projectDir, agentDir };
 }
 
+function createReloadControlExtension(fixture) {
+  const extensionPath = join(fixture.fixtureRoot, "reload-control.mjs");
+  const source = [
+    "export default function reloadControl(pi) {",
+    "  pi.on(\"session_start\", (_event, ctx) => {",
+    "    ctx.ui.notify(\"pi-smoke-reload-ready\", \"info\");",
+    "  });",
+    "  pi.registerCommand(\"smoke:reload\", {",
+    "    description: \"Trigger an isolated extension runtime reload for smoke verification\",",
+    "    handler: async (_args, ctx) => {",
+    "      await ctx.reload();",
+    "    },",
+    "  });",
+    "}",
+    "",
+  ].join("\n");
+  writeFileSync(extensionPath, source, "utf8");
+  return extensionPath;
+}
+
 function redact(value, fixture) {
   let text = String(value ?? "");
   for (const [path, replacement] of [
@@ -174,6 +194,207 @@ function runPi(requests, fixture) {
     timedOut: result.error?.code === "ETIMEDOUT",
     error: result.error ? redact(`${result.error.code ?? ""}: ${result.error.message}`, fixture) : null,
     signal: result.signal ?? null,
+  };
+}
+
+async function runPiWithReload(fixture, extensionPath) {
+  const startedAt = Date.now();
+  const child = spawn(process.execPath, [...rpcArgs, "--extension", extensionPath], {
+    cwd: fixture.projectDir,
+    env: safeEnvironment(fixture.agentDir),
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  const records = [];
+  const waiters = new Set();
+  let stdout = "";
+  let stderr = "";
+  let stdoutBuffer = "";
+  let failure = null;
+  let interactionError = null;
+  let timedOut = false;
+  let requestNumber = 0;
+  let closeResult;
+  let resolveClose;
+  const closed = new Promise((resolvePromise) => {
+    resolveClose = resolvePromise;
+  });
+
+  function rejectWaiters(error) {
+    for (const waiter of waiters) waiter.reject(error);
+    waiters.clear();
+  }
+
+  function fail(error) {
+    if (failure) return;
+    failure = error;
+    rejectWaiters(error);
+  }
+
+  function checkWaiters() {
+    for (const waiter of [...waiters]) {
+      try {
+        const result = waiter.predicate(records);
+        if (result) {
+          waiters.delete(waiter);
+          waiter.resolve(result);
+        }
+      } catch (error) {
+        waiters.delete(waiter);
+        waiter.reject(error);
+      }
+    }
+  }
+
+  function parseLine(line) {
+    if (!line.trim()) return;
+    try {
+      const parsed = parseJsonLines(line);
+      if (parsed.length !== 1) throw new Error("Malformed JSON on RPC stdout.");
+      records.push(parsed[0]);
+      checkWaiters();
+    } catch (error) {
+      fail(error);
+      child.kill("SIGTERM");
+    }
+  }
+
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) + Buffer.byteLength(chunk) > MAX_OUTPUT_BYTES) {
+      fail(new Error(`Pi RPC output exceeded ${MAX_OUTPUT_BYTES} bytes.`));
+      child.kill("SIGTERM");
+      return;
+    }
+    stdout += chunk;
+    stdoutBuffer += chunk;
+    let newlineIndex = stdoutBuffer.indexOf("\n");
+    while (newlineIndex !== -1) {
+      let line = stdoutBuffer.slice(0, newlineIndex);
+      stdoutBuffer = stdoutBuffer.slice(newlineIndex + 1);
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      parseLine(line);
+      newlineIndex = stdoutBuffer.indexOf("\n");
+    }
+  });
+  child.stderr.on("data", (chunk) => {
+    if (Buffer.byteLength(stdout) + Buffer.byteLength(stderr) + Buffer.byteLength(chunk) > MAX_OUTPUT_BYTES) {
+      fail(new Error(`Pi RPC output exceeded ${MAX_OUTPUT_BYTES} bytes.`));
+      child.kill("SIGTERM");
+      return;
+    }
+    stderr += chunk;
+  });
+  child.on("error", (error) => fail(new Error(`Pi process error: ${error.code ?? "unknown"}.`)));
+  child.stdin.on("error", (error) => fail(new Error(`Pi RPC stdin error: ${error.code ?? "unknown"}.`)));
+  child.on("close", (code, signal) => {
+    if (stdoutBuffer.trim()) parseLine(stdoutBuffer.endsWith("\r") ? stdoutBuffer.slice(0, -1) : stdoutBuffer);
+    closeResult = { code, signal };
+    if (waiters.size > 0) fail(new Error("Pi process exited before the expected RPC response."));
+    resolveClose(closeResult);
+  });
+
+  const deadlineTimer = setTimeout(() => {
+    timedOut = true;
+    fail(new Error(`Pi RPC probe exceeded ${PROBE_TIMEOUT_MS}ms.`));
+    if (child.exitCode === null) child.kill("SIGTERM");
+  }, PROBE_TIMEOUT_MS);
+  const forceKillTimer = setTimeout(() => {
+    if (child.exitCode === null) child.kill("SIGKILL");
+  }, PROBE_TIMEOUT_MS + 500);
+
+  function waitFor(predicate, label) {
+    try {
+      const result = predicate(records);
+      if (result) return Promise.resolve(result);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    if (failure) return Promise.reject(failure);
+    return new Promise((resolvePromise, rejectPromise) => {
+      waiters.add({
+        predicate,
+        resolve: resolvePromise,
+        reject: (error) => rejectPromise(new Error(`Waiting for ${label} failed: ${error.message}`)),
+      });
+    });
+  }
+
+  async function send(type, fields = {}, requestId) {
+    const id = requestId ?? `live-smoke-${++requestNumber}`;
+    if (!child.stdin.writable) throw new Error(`Pi stdin closed before ${type}.`);
+    const response = waitFor((rows) => rows.find((row) => row?.type === "response" && row.id === id), `response to ${type}`);
+    try {
+      child.stdin.write(`${JSON.stringify({ type, id, ...fields })}\n`);
+    } catch (error) {
+      fail(new Error(`Pi RPC write failed: ${error.code ?? "unknown"}.`));
+    }
+    return response;
+  }
+
+  async function waitForReloadMarker(count) {
+    return waitFor((rows) => {
+      const markers = rows.filter((row) => row?.type === "extension_ui_request"
+        && row.method === "notify"
+        && row.message === "pi-smoke-reload-ready");
+      return markers.length >= count ? markers[count - 1] : null;
+    }, `reload marker ${count}`);
+  }
+
+  try {
+    await send("get_commands", {}, "initial-commands");
+    await waitForReloadMarker(1);
+    await send("get_state", {}, "initial-state");
+    await send("prompt", { message: "/scheduled:status" }, "initial-status");
+    await waitFor((rows) => rows.find((row) => row?.type === "extension_ui_request"
+      && row.method === "notify"
+      && typeof row.message === "string"
+      && row.message.includes(`Matched:      slot[0] 00:00-24:00 → ${expectedModel.provider}/${expectedModel.id}`)), "initial scheduled status");
+
+    await send("prompt", { message: "/smoke:reload" }, "reload-trigger");
+    await waitForReloadMarker(2);
+    await send("get_commands", {}, "reload-commands");
+    await send("get_state", {}, "reload-state");
+    await send("prompt", { message: "/scheduled:status" }, "reload-status");
+    await waitFor((rows) => {
+      const reloadedReadyIndex = rows.findLastIndex((candidate) => candidate?.type === "extension_ui_request"
+        && candidate.method === "notify"
+        && candidate.message === "pi-smoke-reload-ready");
+      return rows.find((row, index) => index > reloadedReadyIndex
+        && row?.type === "extension_ui_request"
+        && row.method === "notify"
+        && typeof row.message === "string"
+        && row.message.includes(`Matched:      slot[0] 00:00-24:00 → ${expectedModel.provider}/${expectedModel.id}`));
+    }, "reloaded scheduled status");
+  } catch (error) {
+    interactionError = error;
+  } finally {
+    if (!child.stdin.destroyed && child.stdin.writable) child.stdin.end();
+  }
+
+  const closeTimeoutMs = Math.max(0, startedAt + PROBE_TIMEOUT_MS + 1000 - Date.now());
+  let closeTimeout;
+  const notExited = new Promise((resolvePromise) => {
+    closeTimeout = setTimeout(() => resolvePromise({ code: null, signal: null, notExited: true }), closeTimeoutMs);
+  });
+  const exit = closeResult ?? await Promise.race([closed, notExited]);
+  clearTimeout(closeTimeout);
+  clearTimeout(deadlineTimer);
+  clearTimeout(forceKillTimer);
+
+  const sanitizedResponses = sanitizeResponses(records, fixture);
+  return {
+    responses: sanitizedResponses,
+    stdout: sanitizedResponses.map((record) => JSON.stringify(record)).join("\n") + (records.length ? "\n" : ""),
+    stderr: redact(stderr, fixture),
+    fullOutput: `${stdout}\n${stderr}`,
+    exit_code: Number.isInteger(exit.code) ? exit.code : 1,
+    timedOut: timedOut || exit.notExited === true,
+    error: interactionError || failure
+      ? redact(`${(interactionError ?? failure).code ?? ""}: ${(interactionError ?? failure).message}`, fixture)
+      : null,
+    signal: exit.signal ?? null,
   };
 }
 
@@ -307,40 +528,18 @@ function runErrorPathCase() {
   }
 }
 
-function runReloadCleanupCase() {
+async function runReloadCleanupCase() {
   const fixture = createFixture();
+  const extensionPath = createReloadControlExtension(fixture);
   try {
-    const first = runPi([
-      { id: "happy-state", type: "get_state" },
-      { id: "happy-status", type: "prompt", message: "/scheduled:status" },
-    ], fixture);
-    const second = runPi([
-      { id: "reload-commands", type: "get_commands" },
-      { id: "reload-state", type: "get_state" },
-      { id: "reload-status", type: "prompt", message: "/scheduled:status" },
-    ], fixture);
-    const initialAssertions = behaviorAssertions("happy_path", {
-      responses: first.responses,
-      fullOutput: first.fullOutput,
-      exit_code: first.exit_code,
-      expectedModel,
-    });
+    const run = await runPiWithReload(fixture, extensionPath);
     const assertions = behaviorAssertions("reload_cleanup", {
-      responses: second.responses,
-      fullOutput: `${first.fullOutput}\n${second.fullOutput}`,
-      exit_code: { first: first.exit_code, second: second.exit_code },
+      responses: run.responses,
+      fullOutput: run.fullOutput,
+      exit_code: run.exit_code,
       expectedModel,
     });
-    assertions.push({
-      id: "initial_process_functional",
-      expected: "The first actual Pi process also selects the model and handles the scheduled status command before reload.",
-      observed: JSON.stringify(initialAssertions),
-      passed: initialAssertions.every((item) => item.passed),
-    });
-    return makeCase("reload_cleanup", assertions, [first, second], JSON.stringify({
-      first_process: JSON.parse(recordOutput(first)),
-      second_process: JSON.parse(recordOutput(second)),
-    }, null, 2));
+    return makeCase("reload_cleanup", assertions, [run]);
   } finally {
     rmSync(fixture.fixtureRoot, { recursive: true, force: true });
   }

@@ -48,7 +48,9 @@ const clearedStatus = {
 
 test("behavior contract and LF/CRLF JSONL parsing", () => {
   assert.equal(VERIFICATION_CONTRACT, "pi-sdk-behavior-v2");
-  assert.deepEqual(parseJsonLines(`not-json\r\n${JSON.stringify(prompt)}\n\n`), [prompt]);
+  assert.deepEqual(parseJsonLines(`${JSON.stringify(prompt)}\r\n\n`), [prompt]);
+  assert.throws(() => parseJsonLines(`not-json\r\n${JSON.stringify(prompt)}\n`), /Malformed JSON on RPC stdout line 1/);
+  assert.throws(() => parseJsonLines(`${JSON.stringify(prompt)}\nnot-json`), /Malformed JSON on RPC stdout line 2/);
 });
 
 test("extension load requires the actual extension command registration", () => {
@@ -60,7 +62,15 @@ test("extension load requires the actual extension command registration", () => 
   assert.deepEqual(good.map((item) => item.id), ["extension_registered"]);
   assert.equal(good[0].passed, true);
 
-  for (const commands of [[], [{ name: "scheduled:status", source: "prompt" }], [{ name: "other", source: "extension" }]]) {
+  for (const commands of [
+    [],
+    [{ name: "scheduled:status", source: "prompt" }],
+    [{ name: "other", source: "extension" }],
+    [
+      { name: "scheduled:status", source: "extension" },
+      { name: "scheduled:status", source: "extension" },
+    ],
+  ]) {
     const result = behaviorAssertions("extension_load", {
       responses: [{ ...registration, data: { commands } }],
       fullOutput: "",
@@ -125,8 +135,18 @@ test("error path requires the handled invalid-config warning and clean host resu
   })[0].passed, false);
 });
 
-test("reload requires second-process registration, real feature response, and clean exit", () => {
+test("in-process reload requires replacement registration, feature response, disposal, and clean exit", () => {
+  const ready = {
+    type: "extension_ui_request",
+    method: "notify",
+    message: "pi-smoke-reload-ready",
+  };
   const responses = [
+    ready,
+    selectedStatus,
+    clearedStatus,
+    selectedStatus,
+    ready,
     { ...registration, id: "reload-commands" },
     { ...state, id: "reload-state" },
     { ...prompt, id: "reload-status" },
@@ -137,7 +157,7 @@ test("reload requires second-process registration, real feature response, and cl
   const good = behaviorAssertions("reload_cleanup", {
     responses,
     fullOutput: "",
-    exit_code: { first: 0, second: 0 },
+    exit_code: 0,
     expectedModel: model,
   });
   assert.deepEqual(good.map((item) => item.id), [
@@ -148,6 +168,7 @@ test("reload requires second-process registration, real feature response, and cl
   assert.ok(good.every((item) => item.passed));
 
   const incompleteResponses = [
+    responses.filter((row) => row !== ready),
     responses.filter((row) => row.id !== "reload-commands"),
     responses.filter((row) => row.id !== "reload-state"),
     responses.filter((row) => row.id !== "reload-status"),
@@ -159,14 +180,14 @@ test("reload requires second-process registration, real feature response, and cl
     assert.ok(behaviorAssertions("reload_cleanup", {
       responses: incomplete,
       fullOutput: "",
-      exit_code: { first: 0, second: 0 },
+      exit_code: 0,
       expectedModel: model,
     }).some((item) => !item.passed));
   }
   for (const [fullOutput, exit_code] of [
-    ["shutdown error", { first: 0, second: 0 }],
-    ["UnhandledPromiseRejection", { first: 0, second: 0 }],
-    ["", { first: 0, second: null }],
+    ["shutdown error", 0],
+    ["UnhandledPromiseRejection", 0],
+    ["", null],
   ]) {
     assert.equal(behaviorAssertions("reload_cleanup", {
       responses,

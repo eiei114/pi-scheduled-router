@@ -9,12 +9,12 @@ export const UNHANDLED_ERROR_PATTERN = /UnhandledPromiseRejection|uncaught excep
 export const EXTENSION_LOAD_ERROR_PATTERN = /Failed to load extension|Error loading extension/i;
 
 export function parseJsonLines(output) {
-  return output.split(/\r?\n/).flatMap((line) => {
+  return output.split(/\r?\n/).flatMap((line, index) => {
     if (!line.trim()) return [];
     try {
       return [JSON.parse(line)];
     } catch {
-      return [];
+      throw new Error(`Malformed JSON on RPC stdout line ${index + 1}.`);
     }
   });
 }
@@ -29,9 +29,8 @@ function getCommandResponse(responses, id) {
 
 function hasScheduledStatusCommand(responses, id) {
   const response = getCommandResponse(responses, id);
-  return response?.command === "get_commands"
-    && response.success === true
-    && response.data?.commands?.some((command) => command.name === "scheduled:status" && command.source === "extension");
+  const matches = response?.data?.commands?.filter((command) => command.name === "scheduled:status" && command.source === "extension") ?? [];
+  return response?.command === "get_commands" && response.success === true && matches.length === 1;
 }
 
 function hasScheduledModelState(responses, id, expectedModel) {
@@ -105,31 +104,51 @@ export function behaviorAssertions(name, {
   }
 
   if (name === "reload_cleanup") {
-    const registration = hasScheduledStatusCommand(responses, "reload-commands");
-    const state = hasScheduledModelState(responses, "reload-state", expectedModel);
-    const feature = featureResponse(responses, "reload-status", expectedModel);
-    const clearedStatus = responses.find((row) => row?.type === "extension_ui_request"
+    const reloadReadyCount = responses.filter((row) => row?.type === "extension_ui_request"
+      && row.method === "notify"
+      && row.message === "pi-smoke-reload-ready").length;
+    const initialStatusIndex = responses.findIndex((row) => row?.type === "extension_ui_request"
+      && row.method === "setStatus"
+      && row.statusKey === "scheduled-router"
+      && row.statusText === `${expectedModel.provider}/${expectedModel.id}`);
+    const reloadedStatusIndex = responses.findIndex((row, index) => index > initialStatusIndex
+      && row?.type === "extension_ui_request"
+      && row.method === "setStatus"
+      && row.statusKey === "scheduled-router"
+      && row.statusText === `${expectedModel.provider}/${expectedModel.id}`);
+    const clearedStatus = responses.find((row, index) => index > initialStatusIndex
+      && index < reloadedStatusIndex
+      && row?.type === "extension_ui_request"
       && row.method === "setStatus"
       && row.statusKey === "scheduled-router"
       && !Object.hasOwn(row, "statusText"));
+    const finalStatusClear = responses.some((row, index) => index > reloadedStatusIndex
+      && row?.type === "extension_ui_request"
+      && row.method === "setStatus"
+      && row.statusKey === "scheduled-router"
+      && !Object.hasOwn(row, "statusText"));
+    const registration = hasScheduledStatusCommand(responses, "reload-commands");
+    const state = hasScheduledModelState(responses, "reload-state", expectedModel);
+    const feature = featureResponse(responses, "reload-status", expectedModel);
     return [
       assertion(
         "reloaded_extension_registered",
-        "A second actual Pi process loads the extension and registers scheduled:status.",
-        getCommandResponse(responses, "reload-commands") ?? null,
-        registration,
+        "After ctx.reload() in the live Pi process, the replacement runtime registers scheduled:status exactly once.",
+        { response: getCommandResponse(responses, "reload-commands") ?? null, reloadReadyCount },
+        registration && reloadReadyCount >= 2,
       ),
       assertion(
         "reloaded_feature_response",
-        "The second process selects the configured model and handles /scheduled:status with the matched route.",
+        "The reloaded runtime selects the configured model and handles /scheduled:status with the matched route.",
         { stateResponse: getCommandResponse(responses, "reload-state") ?? null, ...feature },
         state && feature.prompt && feature.notification && feature.selectedStatus,
       ),
       assertion(
         "clean_shutdown",
-        "The second host emits session_shutdown status cleanup; both actual Pi processes exit 0 without shutdown or unhandled errors.",
-        { clearedStatus: clearedStatus ?? null, first_exit_code: exit_code.first, second_exit_code: exit_code.second, errors: UNHANDLED_ERROR_PATTERN.test(fullOutput) },
-        Boolean(clearedStatus) && exit_code.first === 0 && exit_code.second === 0 && !UNHANDLED_ERROR_PATTERN.test(fullOutput),
+        "ctx.reload() disposes the old router runtime and clears its status before replacement activation; final session shutdown clears status and the same Pi process exits 0 without unhandled errors.",
+        { clearedStatus: clearedStatus ?? null, finalStatusClear, initialStatusIndex, reloadedStatusIndex, exit_code, errors: UNHANDLED_ERROR_PATTERN.test(fullOutput) },
+        reloadReadyCount >= 2 && initialStatusIndex >= 0 && reloadedStatusIndex > initialStatusIndex
+          && Boolean(clearedStatus) && finalStatusClear && exit_code === 0 && !UNHANDLED_ERROR_PATTERN.test(fullOutput),
       ),
     ];
   }
