@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.13] - 2026-10-19
+
+### Changed
+
+- Update the runtime `js-yaml` dependency to 5.5.0.
+
 ## 0.1.11 - 2026-09-27
 
 - chore: periodic patch bump after 7+ days without npm publish
