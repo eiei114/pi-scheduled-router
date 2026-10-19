@@ -16,7 +16,7 @@ On npmjs.com, configure Trusted Publishing for this package:
 
 Ordinary pushes and merges never create release tags, GitHub Releases, or publish to npm. After a version bump has been reviewed and merged to `main`, an authorized human must manually run `.github/workflows/auto-release.yml` from the Actions tab on `main` and confirm the required `release_confirmed` input. It creates the version tag and GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag with the same confirmation.
 
-The publish workflow accepts only manual dispatches with `release_confirmed` enabled. It validates that the selected ref is a stable `vMAJOR.MINOR.PATCH` tag and that the package version matches before publishing. Use a direct manual dispatch only when an authorized human intentionally needs to retry a release-tag publish.
+The publish workflow accepts only manual dispatches with `release_confirmed` enabled. It validates that the selected ref is a stable `vMAJOR.MINOR.PATCH` tag that exists, checks out its fully qualified tag ref, and verifies that the package version matches before publishing. Use a direct manual dispatch only when an authorized human intentionally needs to retry a release-tag publish.
 
 The workflow skips `name@version` if that exact package version already exists on npm.
 

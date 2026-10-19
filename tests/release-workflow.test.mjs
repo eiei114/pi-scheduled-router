@@ -38,10 +38,27 @@ test("release workflows require explicit manual authorization", () => {
   );
   const tagPattern = releaseTagValidation.run.match(/=~ (\^.*\$)/)?.[1];
   assert.ok(tagPattern, "publish should validate the selected release tag");
+  assert.match(
+    releaseTagValidation.run,
+    /git ls-remote --exit-code --refs/,
+    "publish should verify the selected ref exists as a remote tag",
+  );
+  assert.match(
+    releaseTagValidation.run,
+    /refs\/tags\/\$\{RELEASE_REF\}/,
+    "publish should query the fully qualified tag ref",
+  );
   const isStableVersionTag = new RegExp(tagPattern);
   assert.equal(isStableVersionTag.test("v0.1.13"), true);
   assert.equal(isStableVersionTag.test("main"), false);
   assert.equal(isStableVersionTag.test("v0.1.13-rc.1"), false);
+  const checkoutStep = publish.jobs.publish.steps.find(
+    (step) => step.name === "Checkout",
+  );
+  assert.equal(
+    checkoutStep.with.ref,
+    "refs/tags/${{ inputs.ref || github.ref_name }}",
+  );
   assert.ok(
     publish.jobs.publish.steps.some(
       (step) => step.name === "Verify package version matches release tag",

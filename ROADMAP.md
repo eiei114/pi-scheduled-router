@@ -14,7 +14,7 @@
 | Upcoming release | **0.1.13** (planned for 2026-10-19), prepared for npm Trusted Publishing |
 | Development phase | Post-0.1.0 hardening complete; preparing for 0.2.0 feature consolidation |
 | Next planned | Patch/minor maintenance on `0.1.x`, then a `0.2.0` release with docs + UX polish |
-| CI | typecheck + **81** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
+| CI | typecheck + **82** node:test tests + `npm pack --dry-run`, on push & PR; version-bump guard on PR |
 | Release pipeline | `auto-release.yml` → tag/release → `publish.yml` (Trusted Publishing, no `NPM_TOKEN`) |
 
 `pi-scheduled-router` selects an AI provider/model at session start based on the time of

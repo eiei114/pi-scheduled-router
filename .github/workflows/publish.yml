@@ -37,10 +37,17 @@ jobs:
             exit 1
           fi
 
+          tag_ref="refs/tags/${RELEASE_REF}"
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if ! git ls-remote --exit-code --refs "$repository_url" "$tag_ref" >/dev/null; then
+            echo "Release tag '$RELEASE_REF' does not exist; refusing to publish." >&2
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: refs/tags/${{ inputs.ref || github.ref_name }}
           persist-credentials: false
 
       - name: Setup Node.js
