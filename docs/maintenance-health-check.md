@@ -33,7 +33,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `tests/extension-validate.test.mjs` | 12 | Extension hooks, commands, status/configure flows, and config tool operations |
 | `tests/docs-consistency.test.mjs` | 5 | README pin + example config validation + maintenance baseline drift guard |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
-| **Total** | **81** | **81 pass / 0 fail** |
+| **Total** | **82** | **82 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 

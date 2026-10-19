@@ -1,10 +1,12 @@
 name: Auto Release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - package.json
+  workflow_dispatch:
+    inputs:
+      release_confirmed:
+        description: "I authorize creating a GitHub Release and publishing the current main version to npm."
+        required: true
+        type: boolean
 
 permissions:
   actions: write
@@ -13,6 +15,7 @@ permissions:
 jobs:
   release:
     name: Create release for new version
+    if: github.ref == 'refs/heads/main' && inputs.release_confirmed == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,11 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for version bump
+      - name: Check for an unreleased version
         id: check
         shell: bash
         run: |
-          BEFORE="${{ github.event.before }}"
+          BEFORE=$(git log -2 --format=%H -- package.json | tail -1)
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           TAG="v${CURRENT_VERSION}"
 
@@ -79,6 +82,6 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.check.outputs.tag }}"
-          gh workflow run publish.yml --ref "$TAG" -f ref="$TAG"
+          gh workflow run publish.yml --ref "$TAG" -f ref="$TAG" -f release_confirmed=true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
