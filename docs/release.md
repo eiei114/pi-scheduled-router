@@ -12,17 +12,11 @@ On npmjs.com, configure Trusted Publishing for this package:
 - Repository: this GitHub repository
 - Workflow filename: `publish.yml`
 
-## Publish
+## Human-authorized release
 
-```bash
-npm version patch
-git push
-```
+Ordinary pushes and merges never create release tags, GitHub Releases, or publish to npm. After a version bump has been reviewed and merged to `main`, an authorized human must manually run `.github/workflows/auto-release.yml` from the Actions tab on `main` and confirm the required `release_confirmed` input. It creates the version tag and GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag with the same confirmation.
 
-On `main`, `.github/workflows/auto-release.yml` checks `package.json` version. If `v<version>` does not exist yet, it creates the tag, creates the GitHub Release, then explicitly dispatches `.github/workflows/publish.yml` for that tag.
-
-The `v*.*.*` tag also triggers `.github/workflows/publish.yml`, which runs CI and publishes to npm when tags are pushed manually.
-Publishing also runs when a GitHub Release is published, and can be run manually from GitHub Actions with `workflow_dispatch`.
+The publish workflow accepts only manual dispatches with `release_confirmed` enabled. It validates that the selected ref is a stable `vMAJOR.MINOR.PATCH` tag that exists, checks out its fully qualified tag ref, and verifies that the package version matches before publishing. Use a direct manual dispatch only when an authorized human intentionally needs to retry a release-tag publish.
 
 The workflow skips `name@version` if that exact package version already exists on npm.
 
@@ -37,8 +31,8 @@ The v0.1.6 release body still contains literal `\\n` sequences. The current `aut
 Do not ship a new Pi OSS package or version bump with only `package.json` changes.
 The repository must include the release workflow pair:
 
-- `.github/workflows/auto-release.yml` creates `v<version>` tags and GitHub Releases from `main` version bumps.
-- `.github/workflows/publish.yml` publishes to npm through Trusted Publishing.
+- `.github/workflows/auto-release.yml` requires a human `workflow_dispatch` confirmation on `main` before it creates `v<version>` tags and GitHub Releases.
+- `.github/workflows/publish.yml` requires an explicit manual dispatch confirmation and publishes a matching version tag through Trusted Publishing.
 
 Important: tags or releases created by `GITHUB_TOKEN` do not reliably fan out into another workflow through normal `push.tags` or `release.published` triggers. The template keeps publishing reliable by having `auto-release.yml` explicitly dispatch `publish.yml` after creating the tag/release. If you change the release flow, keep one explicit handoff path: `workflow_dispatch` from auto-release, `repository_dispatch`, or `workflow_run` on the auto-release workflow.
 

@@ -1,21 +1,14 @@
 name: Publish to npm
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - package.json
-      - package-lock.json
-      - .github/workflows/publish.yml
-    tags:
-      - 'v*.*.*'
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
+      release_confirmed:
+        description: "I authorize publishing this versioned release tag to npm."
+        required: true
+        type: boolean
       ref:
-        description: 'Git ref to publish (defaults to selected ref)'
+        description: 'Versioned release tag to publish (defaults to the selected ref)'
         required: false
         type: string
 
@@ -30,13 +23,31 @@ concurrency:
 jobs:
   publish:
     name: Publish package
+    if: inputs.release_confirmed == true
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate release tag
+        shell: bash
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          if [[ ! "$RELEASE_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Ref '$RELEASE_REF' is not a stable version tag (vMAJOR.MINOR.PATCH)." >&2
+            exit 1
+          fi
+
+          tag_ref="refs/tags/${RELEASE_REF}"
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if ! git ls-remote --exit-code --refs "$repository_url" "$tag_ref" >/dev/null; then
+            echo "Release tag '$RELEASE_REF' does not exist; refusing to publish." >&2
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: refs/tags/${{ inputs.ref || github.ref_name }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -45,6 +56,18 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
+
+      - name: Verify package version matches release tag
+        shell: bash
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          expected_version="${RELEASE_REF#v}"
+          actual_version=$(node -p "require('./package.json').version")
+          if [ "$actual_version" != "$expected_version" ]; then
+            echo "Release tag ${RELEASE_REF} does not match package version ${actual_version}." >&2
+            exit 1
+          fi
 
       - name: Ensure npm supports trusted publishing
         run: npm install -g npm@latest
