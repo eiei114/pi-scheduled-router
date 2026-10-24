@@ -1,11 +1,11 @@
 # Changelog
 
-## [0.1.13] - 2026-10-19
+## [0.1.13] - 2026-10-16
 
 ### Changed
 
-- Update the runtime `js-yaml` dependency to 5.5.0.
-- Require explicit human confirmation for release creation and npm publishing.
+- Pin the Pi SDK development and test dependencies to `1.2.0`; keep public peer ranges unchanged.
+- Run an actual isolated Pi host compatibility smoke in CI.
 
 ## 0.1.11 - 2026-09-27
 

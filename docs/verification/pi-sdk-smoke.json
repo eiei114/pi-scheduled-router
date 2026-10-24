@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "verification_contract": "pi-sdk-behavior-v2",
+  "sdk_versions": {
+    "@earendil-works/pi-agent-core": "1.2.0",
+    "@earendil-works/pi-ai": "1.2.0",
+    "@earendil-works/pi-coding-agent": "1.2.0",
+    "@earendil-works/pi-tui": "1.2.0"
+  },
+  "platform": "darwin",
+  "model_inference": "none; actual pinned Pi host, extension lifecycle and feature execute with an isolated deterministic models.json registration; no provider inference or network request is made",
+  "process_deadline_ms": 15000,
+  "unhandled_errors": 0,
+  "extension_load_errors": 0,
+  "cases": [
+    {
+      "name": "extension_load",
+      "command": "npm run smoke:pi",
+      "exit_code": 0,
+      "passed": true,
+      "evidence": "[\n  \"{\\n  \\\"stdout\\\": \\\"{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"9cc615ba-cae2-44fd-bad9-78f2b2a5b7a1\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\",\\\\\\\"statusText\\\\\\\":\\\\\\\"router-smoke/scheduled-model\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"load-commands\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_commands\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"commands\\\\\\\":[{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:status\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Show current scheduled router status (time, matched slot, model)\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}},{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:configure\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Guide to configure scheduled router time slots\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}}]}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"c7a1f2e5-6661-4a12-8579-849b951d7965\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\"}\\\\n\\\",\\n  \\\"stderr\\\": \\\"\\\",\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"signal\\\": null,\\n  \\\"spawn_error\\\": null\\n}\"\n]",
+      "assertions": [
+        {
+          "id": "extension_registered",
+          "expected": "The actual Pi host returns scheduled:status as a registered extension command.",
+          "observed": "{\"id\":\"load-commands\",\"type\":\"response\",\"command\":\"get_commands\",\"success\":true,\"data\":{\"commands\":[{\"name\":\"scheduled:status\",\"description\":\"Show current scheduled router status (time, matched slot, model)\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"<checkout>/extensions/index.ts\",\"source\":\"cli\",\"scope\":\"temporary\",\"origin\":\"top-level\"}},{\"name\":\"scheduled:configure\",\"description\":\"Guide to configure scheduled router time slots\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"<checkout>/extensions/index.ts\",\"source\":\"cli\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}]}}",
+          "passed": true
+        },
+        {
+          "id": "pi_process_exit",
+          "expected": "Every actual Pi process exits with status 0 within 15000ms; deadline termination is failure.",
+          "observed": "[{\"exit_code\":0,\"timed_out\":false,\"signal\":null,\"error\":null}]",
+          "passed": true
+        },
+        {
+          "id": "no_unhandled_errors",
+          "expected": "Captured Pi stdout/stderr contains no unhandled exceptions or shutdown errors.",
+          "observed": "{\"matched\":false,\"captured_bytes\":923}",
+          "passed": true
+        },
+        {
+          "id": "no_extension_load_errors",
+          "expected": "Captured Pi stdout/stderr contains no extension loader errors.",
+          "observed": "{\"matched\":false}",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "happy_path",
+      "command": "npm run smoke:pi",
+      "exit_code": 0,
+      "passed": true,
+      "evidence": "[\n  \"{\\n  \\\"stdout\\\": \\\"{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"df684e2e-aa2c-407c-a062-2112908673aa\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\",\\\\\\\"statusText\\\\\\\":\\\\\\\"router-smoke/scheduled-model\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"happy-state\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_state\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"model\\\\\\\":{\\\\\\\"id\\\\\\\":\\\\\\\"scheduled-model\\\\\\\",\\\\\\\"name\\\\\\\":\\\\\\\"Isolated Scheduled Router Smoke Model\\\\\\\",\\\\\\\"api\\\\\\\":\\\\\\\"openai-completions\\\\\\\",\\\\\\\"provider\\\\\\\":\\\\\\\"router-smoke\\\\\\\",\\\\\\\"baseUrl\\\\\\\":\\\\\\\"http://127.0.0.1:1/v1\\\\\\\",\\\\\\\"reasoning\\\\\\\":false,\\\\\\\"input\\\\\\\":[\\\\\\\"text\\\\\\\"],\\\\\\\"cost\\\\\\\":{\\\\\\\"input\\\\\\\":0,\\\\\\\"output\\\\\\\":0,\\\\\\\"cacheRead\\\\\\\":0,\\\\\\\"cacheWrite\\\\\\\":0},\\\\\\\"contextWindow\\\\\\\":8192,\\\\\\\"maxTokens\\\\\\\":1024},\\\\\\\"thinkingLevel\\\\\\\":\\\\\\\"off\\\\\\\",\\\\\\\"isStreaming\\\\\\\":false,\\\\\\\"isCompacting\\\\\\\":false,\\\\\\\"steeringMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"followUpMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"sessionId\\\\\\\":\\\\\\\"01a16c03-0417-71ab-a37d-e2ef3d3bfc50\\\\\\\",\\\\\\\"autoCompactionEnabled\\\\\\\":true,\\\\\\\"messageCount\\\\\\\":0,\\\\\\\"pendingMessageCount\\\\\\\":0}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"6d015b15-3142-40ec-ae31-c48400a47c41\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"Current time: 2026-10-24 03:44 UTC\\\\\\\\nTimezone:     UTC\\\\\\\\nMatched:      slot[0] 00:00-24:00 → router-smoke/scheduled-model\\\\\\\\nConfig:       /private<isolated-project>/.pi/scheduled-router.yaml\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"info\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"happy-status\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"prompt\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"disposition\\\\\\\":\\\\\\\"handled\\\\\\\"}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"dbe2ecbc-3cd3-4a15-859c-2b16a70b1912\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\"}\\\\n\\\",\\n  \\\"stderr\\\": \\\"\\\",\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"signal\\\": null,\\n  \\\"spawn_error\\\": null\\n}\"\n]",
+      "assertions": [
+        {
+          "id": "feature_response",
+          "expected": "The scheduled model is selected in real Pi state and /scheduled:status returns a handled response with the matched route.",
+          "observed": "{\"stateResponse\":{\"id\":\"happy-state\",\"type\":\"response\",\"command\":\"get_state\",\"success\":true,\"data\":{\"model\":{\"id\":\"scheduled-model\",\"name\":\"Isolated Scheduled Router Smoke Model\",\"api\":\"openai-completions\",\"provider\":\"router-smoke\",\"baseUrl\":\"http://127.0.0.1:1/v1\",\"reasoning\":false,\"input\":[\"text\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024},\"thinkingLevel\":\"off\",\"isStreaming\":false,\"isCompacting\":false,\"steeringMode\":\"one-at-a-time\",\"followUpMode\":\"one-at-a-time\",\"sessionId\":\"01a16c03-0417-71ab-a37d-e2ef3d3bfc50\",\"autoCompactionEnabled\":true,\"messageCount\":0,\"pendingMessageCount\":0}},\"prompt\":true,\"notification\":true,\"selectedStatus\":true,\"promptResponse\":{\"id\":\"happy-status\",\"type\":\"response\",\"command\":\"prompt\",\"success\":true,\"data\":{\"disposition\":\"handled\"}},\"statusNotification\":{\"type\":\"extension_ui_request\",\"id\":\"6d015b15-3142-40ec-ae31-c48400a47c41\",\"method\":\"notify\",\"message\":\"Current time: 2026-10-24 03:44 UTC\\nTimezone:     UTC\\nMatched:      slot[0] 00:00-24:00 → router-smoke/scheduled-model\\nConfig:       /private<isolated-project>/.pi/scheduled-router.yaml\",\"notifyType\":\"info\"},\"selectedStatusRequest\":{\"type\":\"extension_ui_request\",\"id\":\"df684e2e-aa2c-407c-a062-2112908673aa\",\"method\":\"setStatus\",\"statusKey\":\"scheduled-router\",\"statusText\":\"router-smoke/scheduled-model\"}}",
+          "passed": true
+        },
+        {
+          "id": "pi_process_exit",
+          "expected": "Every actual Pi process exits with status 0 within 15000ms; deadline termination is failure.",
+          "observed": "[{\"exit_code\":0,\"timed_out\":false,\"signal\":null,\"error\":null}]",
+          "passed": true
+        },
+        {
+          "id": "no_unhandled_errors",
+          "expected": "Captured Pi stdout/stderr contains no unhandled exceptions or shutdown errors.",
+          "observed": "{\"matched\":false,\"captured_bytes\":1425}",
+          "passed": true
+        },
+        {
+          "id": "no_extension_load_errors",
+          "expected": "Captured Pi stdout/stderr contains no extension loader errors.",
+          "observed": "{\"matched\":false}",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "error_path",
+      "command": "npm run smoke:pi",
+      "exit_code": 0,
+      "passed": true,
+      "evidence": "[\n  \"{\\n  \\\"stdout\\\": \\\"{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"c2162a0f-82d9-494f-aaed-a2e46f14a49e\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"Scheduled router: invalid config: Unsupported config version 2. Expected 1.\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"warning\\\\\\\"}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"bfe1f3c7-53d3-47fe-ba11-7b59867008b7\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\"}\\\\n\\\",\\n  \\\"stderr\\\": \\\"\\\",\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"signal\\\": null,\\n  \\\"spawn_error\\\": null\\n}\"\n]",
+      "assertions": [
+        {
+          "id": "handled_error",
+          "expected": "The actual session_start path catches an invalid config, reports the validation warning, and does not leave an unhandled host error.",
+          "observed": "{\"warning\":{\"type\":\"extension_ui_request\",\"id\":\"c2162a0f-82d9-494f-aaed-a2e46f14a49e\",\"method\":\"notify\",\"message\":\"Scheduled router: invalid config: Unsupported config version 2. Expected 1.\",\"notifyType\":\"warning\"},\"exit_code\":0,\"unhandledError\":false}",
+          "passed": true
+        },
+        {
+          "id": "pi_process_exit",
+          "expected": "Every actual Pi process exits with status 0 within 15000ms; deadline termination is failure.",
+          "observed": "[{\"exit_code\":0,\"timed_out\":false,\"signal\":null,\"error\":null}]",
+          "passed": true
+        },
+        {
+          "id": "no_unhandled_errors",
+          "expected": "Captured Pi stdout/stderr contains no unhandled exceptions or shutdown errors.",
+          "observed": "{\"matched\":false,\"captured_bytes\":334}",
+          "passed": true
+        },
+        {
+          "id": "no_extension_load_errors",
+          "expected": "Captured Pi stdout/stderr contains no extension loader errors.",
+          "observed": "{\"matched\":false}",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "reload_cleanup",
+      "command": "npm run smoke:pi",
+      "exit_code": 0,
+      "passed": true,
+      "evidence": "[\n  \"{\\n  \\\"stdout\\\": \\\"{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"cc118e90-e14d-4f42-b0f4-9433bed90bed\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\",\\\\\\\"statusText\\\\\\\":\\\\\\\"router-smoke/scheduled-model\\\\\\\"}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"76f1ae84-7918-4f21-9e95-9b7549cbd8e7\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"pi-smoke-reload-ready\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"info\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"initial-commands\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_commands\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"commands\\\\\\\":[{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:status\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Show current scheduled router status (time, matched slot, model)\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}},{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:configure\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Guide to configure scheduled router time slots\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}},{\\\\\\\"name\\\\\\\":\\\\\\\"smoke:reload\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Trigger an isolated extension runtime reload for smoke verification\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<isolated-smoke-dir>/reload-control.mjs\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}}]}}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"initial-state\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_state\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"model\\\\\\\":{\\\\\\\"id\\\\\\\":\\\\\\\"scheduled-model\\\\\\\",\\\\\\\"name\\\\\\\":\\\\\\\"Isolated Scheduled Router Smoke Model\\\\\\\",\\\\\\\"api\\\\\\\":\\\\\\\"openai-completions\\\\\\\",\\\\\\\"provider\\\\\\\":\\\\\\\"router-smoke\\\\\\\",\\\\\\\"baseUrl\\\\\\\":\\\\\\\"http://127.0.0.1:1/v1\\\\\\\",\\\\\\\"reasoning\\\\\\\":false,\\\\\\\"input\\\\\\\":[\\\\\\\"text\\\\\\\"],\\\\\\\"cost\\\\\\\":{\\\\\\\"input\\\\\\\":0,\\\\\\\"output\\\\\\\":0,\\\\\\\"cacheRead\\\\\\\":0,\\\\\\\"cacheWrite\\\\\\\":0},\\\\\\\"contextWindow\\\\\\\":8192,\\\\\\\"maxTokens\\\\\\\":1024},\\\\\\\"thinkingLevel\\\\\\\":\\\\\\\"off\\\\\\\",\\\\\\\"isStreaming\\\\\\\":false,\\\\\\\"isCompacting\\\\\\\":false,\\\\\\\"steeringMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"followUpMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"sessionId\\\\\\\":\\\\\\\"01a16c03-054f-7499-b823-8986ec92c219\\\\\\\",\\\\\\\"autoCompactionEnabled\\\\\\\":true,\\\\\\\"messageCount\\\\\\\":0,\\\\\\\"pendingMessageCount\\\\\\\":0}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"3ef3600c-bb45-4d47-acb2-65aa378c28bb\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"Current time: 2026-10-24 03:44 UTC\\\\\\\\nTimezone:     UTC\\\\\\\\nMatched:      slot[0] 00:00-24:00 → router-smoke/scheduled-model\\\\\\\\nConfig:       /private<isolated-project>/.pi/scheduled-router.yaml\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"info\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"initial-status\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"prompt\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"disposition\\\\\\\":\\\\\\\"handled\\\\\\\"}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"ad0b0fa2-aaf6-4d61-9b6e-fd105630c8c1\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\"}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"c6d3e747-210d-4107-ad3b-3aeac1ef6680\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\",\\\\\\\"statusText\\\\\\\":\\\\\\\"router-smoke/scheduled-model\\\\\\\"}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"c7b9bc35-04e0-48fa-a262-a71703847f5d\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"pi-smoke-reload-ready\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"info\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"reload-trigger\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"prompt\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"disposition\\\\\\\":\\\\\\\"handled\\\\\\\"}}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"reload-commands\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_commands\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"commands\\\\\\\":[{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:status\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Show current scheduled router status (time, matched slot, model)\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}},{\\\\\\\"name\\\\\\\":\\\\\\\"scheduled:configure\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Guide to configure scheduled router time slots\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<checkout>/extensions/index.ts\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}},{\\\\\\\"name\\\\\\\":\\\\\\\"smoke:reload\\\\\\\",\\\\\\\"description\\\\\\\":\\\\\\\"Trigger an isolated extension runtime reload for smoke verification\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"extension\\\\\\\",\\\\\\\"sourceInfo\\\\\\\":{\\\\\\\"path\\\\\\\":\\\\\\\"<isolated-smoke-dir>/reload-control.mjs\\\\\\\",\\\\\\\"source\\\\\\\":\\\\\\\"cli\\\\\\\",\\\\\\\"scope\\\\\\\":\\\\\\\"temporary\\\\\\\",\\\\\\\"origin\\\\\\\":\\\\\\\"top-level\\\\\\\"}}]}}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"reload-state\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"get_state\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"model\\\\\\\":{\\\\\\\"id\\\\\\\":\\\\\\\"scheduled-model\\\\\\\",\\\\\\\"name\\\\\\\":\\\\\\\"Isolated Scheduled Router Smoke Model\\\\\\\",\\\\\\\"api\\\\\\\":\\\\\\\"openai-completions\\\\\\\",\\\\\\\"provider\\\\\\\":\\\\\\\"router-smoke\\\\\\\",\\\\\\\"baseUrl\\\\\\\":\\\\\\\"http://127.0.0.1:1/v1\\\\\\\",\\\\\\\"reasoning\\\\\\\":false,\\\\\\\"input\\\\\\\":[\\\\\\\"text\\\\\\\"],\\\\\\\"cost\\\\\\\":{\\\\\\\"input\\\\\\\":0,\\\\\\\"output\\\\\\\":0,\\\\\\\"cacheRead\\\\\\\":0,\\\\\\\"cacheWrite\\\\\\\":0},\\\\\\\"contextWindow\\\\\\\":8192,\\\\\\\"maxTokens\\\\\\\":1024},\\\\\\\"thinkingLevel\\\\\\\":\\\\\\\"off\\\\\\\",\\\\\\\"isStreaming\\\\\\\":false,\\\\\\\"isCompacting\\\\\\\":false,\\\\\\\"steeringMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"followUpMode\\\\\\\":\\\\\\\"one-at-a-time\\\\\\\",\\\\\\\"sessionId\\\\\\\":\\\\\\\"01a16c03-054f-7499-b823-8986ec92c219\\\\\\\",\\\\\\\"autoCompactionEnabled\\\\\\\":true,\\\\\\\"messageCount\\\\\\\":0,\\\\\\\"pendingMessageCount\\\\\\\":0}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"c464de89-d5e0-4149-8820-017846f75072\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"notify\\\\\\\",\\\\\\\"message\\\\\\\":\\\\\\\"Current time: 2026-10-24 03:44 UTC\\\\\\\\nTimezone:     UTC\\\\\\\\nMatched:      slot[0] 00:00-24:00 → router-smoke/scheduled-model\\\\\\\\nConfig:       /private<isolated-project>/.pi/scheduled-router.yaml\\\\\\\",\\\\\\\"notifyType\\\\\\\":\\\\\\\"info\\\\\\\"}\\\\n{\\\\\\\"id\\\\\\\":\\\\\\\"reload-status\\\\\\\",\\\\\\\"type\\\\\\\":\\\\\\\"response\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"prompt\\\\\\\",\\\\\\\"success\\\\\\\":true,\\\\\\\"data\\\\\\\":{\\\\\\\"disposition\\\\\\\":\\\\\\\"handled\\\\\\\"}}\\\\n{\\\\\\\"type\\\\\\\":\\\\\\\"extension_ui_request\\\\\\\",\\\\\\\"id\\\\\\\":\\\\\\\"9c1c6eca-6a35-44c4-8a15-950e5c6a80a4\\\\\\\",\\\\\\\"method\\\\\\\":\\\\\\\"setStatus\\\\\\\",\\\\\\\"statusKey\\\\\\\":\\\\\\\"scheduled-router\\\\\\\"}\\\\n\\\",\\n  \\\"stderr\\\": \\\"\\\",\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"signal\\\": null,\\n  \\\"spawn_error\\\": null\\n}\"\n]",
+      "assertions": [
+        {
+          "id": "reloaded_extension_registered",
+          "expected": "After ctx.reload() in the live Pi process, the replacement runtime registers scheduled:status exactly once.",
+          "observed": "{\"response\":{\"id\":\"reload-commands\",\"type\":\"response\",\"command\":\"get_commands\",\"success\":true,\"data\":{\"commands\":[{\"name\":\"scheduled:status\",\"description\":\"Show current scheduled router status (time, matched slot, model)\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"<checkout>/extensions/index.ts\",\"source\":\"cli\",\"scope\":\"temporary\",\"origin\":\"top-level\"}},{\"name\":\"scheduled:configure\",\"description\":\"Guide to configure scheduled router time slots\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"<checkout>/extensions/index.ts\",\"source\":\"cli\",\"scope\":\"temporary\",\"origin\":\"top-level\"}},{\"name\":\"smoke:reload\",\"description\":\"Trigger an isolated extension runtime reload for smoke verification\",\"source\":\"extension\",\"sourceInfo\":{\"path\":\"<isolated-smoke-dir>/reload-control.mjs\",\"source\":\"cli\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}]}},\"reloadReadyCount\":2}",
+          "passed": true
+        },
+        {
+          "id": "reloaded_feature_response",
+          "expected": "The reloaded runtime selects the configured model and handles /scheduled:status with the matched route.",
+          "observed": "{\"stateResponse\":{\"id\":\"reload-state\",\"type\":\"response\",\"command\":\"get_state\",\"success\":true,\"data\":{\"model\":{\"id\":\"scheduled-model\",\"name\":\"Isolated Scheduled Router Smoke Model\",\"api\":\"openai-completions\",\"provider\":\"router-smoke\",\"baseUrl\":\"http://127.0.0.1:1/v1\",\"reasoning\":false,\"input\":[\"text\"],\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0},\"contextWindow\":8192,\"maxTokens\":1024},\"thinkingLevel\":\"off\",\"isStreaming\":false,\"isCompacting\":false,\"steeringMode\":\"one-at-a-time\",\"followUpMode\":\"one-at-a-time\",\"sessionId\":\"01a16c03-054f-7499-b823-8986ec92c219\",\"autoCompactionEnabled\":true,\"messageCount\":0,\"pendingMessageCount\":0}},\"prompt\":true,\"notification\":true,\"selectedStatus\":true,\"promptResponse\":{\"id\":\"reload-status\",\"type\":\"response\",\"command\":\"prompt\",\"success\":true,\"data\":{\"disposition\":\"handled\"}},\"statusNotification\":{\"type\":\"extension_ui_request\",\"id\":\"3ef3600c-bb45-4d47-acb2-65aa378c28bb\",\"method\":\"notify\",\"message\":\"Current time: 2026-10-24 03:44 UTC\\nTimezone:     UTC\\nMatched:      slot[0] 00:00-24:00 → router-smoke/scheduled-model\\nConfig:       /private<isolated-project>/.pi/scheduled-router.yaml\",\"notifyType\":\"info\"},\"selectedStatusRequest\":{\"type\":\"extension_ui_request\",\"id\":\"cc118e90-e14d-4f42-b0f4-9433bed90bed\",\"method\":\"setStatus\",\"statusKey\":\"scheduled-router\",\"statusText\":\"router-smoke/scheduled-model\"}}",
+          "passed": true
+        },
+        {
+          "id": "clean_shutdown",
+          "expected": "ctx.reload() disposes the old router runtime and clears its status before replacement activation; final session shutdown clears status and the same Pi process exits 0 without unhandled errors.",
+          "observed": "{\"clearedStatus\":{\"type\":\"extension_ui_request\",\"id\":\"ad0b0fa2-aaf6-4d61-9b6e-fd105630c8c1\",\"method\":\"setStatus\",\"statusKey\":\"scheduled-router\"},\"finalStatusClear\":true,\"initialStatusIndex\":0,\"reloadedStatusIndex\":7,\"exit_code\":0,\"errors\":false}",
+          "passed": true
+        },
+        {
+          "id": "pi_process_exit",
+          "expected": "Every actual Pi process exits with status 0 within 15000ms; deadline termination is failure.",
+          "observed": "[{\"exit_code\":0,\"timed_out\":false,\"signal\":null,\"error\":null}]",
+          "passed": true
+        },
+        {
+          "id": "no_unhandled_errors",
+          "expected": "Captured Pi stdout/stderr contains no unhandled exceptions or shutdown errors.",
+          "observed": "{\"matched\":false,\"captured_bytes\":5129}",
+          "passed": true
+        },
+        {
+          "id": "no_extension_load_errors",
+          "expected": "Captured Pi stdout/stderr contains no extension loader errors.",
+          "observed": "{\"matched\":false}",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "host_shell",
+      "command": "npm run smoke:pi",
+      "exit_code": 0,
+      "passed": true,
+      "evidence": "[\n  \"{\\n  \\\"stdout\\\": \\\"1.2.0\\\\n\\\",\\n  \\\"stderr\\\": \\\"\\\",\\n  \\\"exit_code\\\": 0,\\n  \\\"timed_out\\\": false,\\n  \\\"signal\\\": null,\\n  \\\"spawn_error\\\": null\\n}\"\n]",
+      "assertions": [
+        {
+          "id": "native_shell_boundary",
+          "expected": "The native host shell (Windows PowerShell or POSIX /bin/sh) launches the locally pinned Pi CLI and returns its exact SDK version.",
+          "observed": "{\"exit_code\":0,\"stdout\":\"1.2.0\",\"stderr\":\"\",\"expectedVersion\":\"1.2.0\"}",
+          "passed": true
+        },
+        {
+          "id": "pi_process_exit",
+          "expected": "Every actual Pi process exits with status 0 within 15000ms; deadline termination is failure.",
+          "observed": "[{\"exit_code\":0,\"timed_out\":false,\"signal\":null,\"error\":null}]",
+          "passed": true
+        },
+        {
+          "id": "no_unhandled_errors",
+          "expected": "Captured Pi stdout/stderr contains no unhandled exceptions or shutdown errors.",
+          "observed": "{\"matched\":false,\"captured_bytes\":7}",
+          "passed": true
+        },
+        {
+          "id": "no_extension_load_errors",
+          "expected": "Captured Pi stdout/stderr contains no extension loader errors.",
+          "observed": "{\"matched\":false}",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}
