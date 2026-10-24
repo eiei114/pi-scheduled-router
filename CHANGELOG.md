@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14] - 2026-10-24
+
+### Changed
+
+- Pin the Pi SDK development and test dependencies to `1.2.0`; keep public peer ranges unchanged.
+- Run an actual isolated Pi host compatibility smoke in CI.
+
 ## [0.1.13] - 2026-10-19
 
 ### Changed

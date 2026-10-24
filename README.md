@@ -35,10 +35,10 @@ This router is **mutually exclusive** with `pi-weighted-model-router`. Install o
 pi install npm:pi-scheduled-router
 ```
 
-Pin a specific version (this example works only after 0.1.13 is published):
+Pin a specific version (this example works only after 0.1.14 is published):
 
 ```bash
-pi install npm:pi-scheduled-router@0.1.13
+pi install npm:pi-scheduled-router@0.1.14
 ```
 
 Install into the current project instead of your user Pi settings:

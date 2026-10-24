@@ -10,7 +10,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `SECURITY.md` | ✅ | Vulnerability reporting policy present |
 | `CODE_OF_CONDUCT.md` | ✅ | Present |
 | `CONTRIBUTING.md` | ✅ | Dev flow documented (`npm run ci`) |
-| `CHANGELOG.md` | ✅ | v0.1.6 current on `main` |
+| `CHANGELOG.md` | ✅ | v0.1.14 prepared in this PR; not published |
 | README badges | ✅ | CI, Publish, npm version/downloads, License, Pi package, Trusted Publishing |
 | `docs/release.md` | ✅ | Trusted Publishing + auto-release handoff documented |
 | `.github/workflows/ci.yml` | ✅ | typecheck + test + pack:check + version:check on PRs |
@@ -19,7 +19,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## CI verification
 
-- **Local `npm run ci`:** pass (typecheck, 82 tests, `npm pack --dry-run`).
+- **Local `npm run ci`:** pass (typecheck, 88 tests, actual Pi SDK smoke, `npm pack --dry-run`).
 - **Workflow pinning:** `actions/checkout@v7`, `actions/setup-node@v7`.
 
 ## Test inventory
@@ -34,7 +34,8 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 | `tests/docs-consistency.test.mjs` | 5 | README pin + example config validation + maintenance baseline drift guard |
 | `tests/release-workflow.test.mjs` | 1 | Release authorization and immutable tag validation |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
-| **Total** | **82** | **82 pass / 0 fail** |
+| `tests/pi-sdk-smoke-contract.test.mjs` | 6 | Actual Pi smoke assertion contract and negative fixtures |
+| **Total** | **88** | **88 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 
@@ -52,7 +53,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## Docs freshness
 
-- README pin example, `package.json` version, and `docs-consistency.test.mjs` are aligned on `0.1.6`.
+- README pin example, `package.json` version, and `docs-consistency.test.mjs` are aligned on `0.1.14`.
 - CONTRIBUTING uses `npm run ci` (not `pnpm`); `package.json` has no `pnpm` scripts — npm is the canonical package manager.
 
 ## Fixes in this maintenance PR
