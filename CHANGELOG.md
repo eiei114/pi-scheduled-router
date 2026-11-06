@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14] - 2026-11-07
+
+### Changed
+
+- Pin the Pi SDK development and test dependencies to `1.5.0`; keep public peer ranges unchanged.
+- Pin TypeBox to `1.3.27` to match the Pi SDK and avoid duplicate versions.
+
 ## [0.1.13] - 2026-10-16
 
 ### Changed
