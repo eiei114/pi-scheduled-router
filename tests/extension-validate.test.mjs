@@ -205,6 +205,36 @@ test("scheduled_router_config read returns normalized YAML for project config", 
   });
 });
 
+test("scheduled_router_config read reports unparseable YAML without throwing", async () => {
+  await withTempDirs(async ({ projectRoot }) => {
+    const configPath = await writeProjectConfig(projectRoot, "version: 1\nslots: [\n");
+    const tool = getScheduledRouterConfigTool();
+    const { ctx } = mockCtx(projectRoot);
+
+    const result = await tool.execute("test-call", { action: "read" }, undefined, undefined, ctx);
+
+    assert.equal(result.details.configured, true);
+    assert.equal(result.details.configPath, configPath);
+    assert.equal(result.details.valid, false);
+    assert.match(result.content[0].text, /^Config is not valid YAML: \S/);
+  });
+});
+
+test("scheduled_router_config read reports configs that fail validation", async () => {
+  await withTempDirs(async ({ projectRoot }) => {
+    const configPath = await writeProjectConfig(projectRoot, `${BASE_YAML}slots: []\n`);
+    const tool = getScheduledRouterConfigTool();
+    const { ctx } = mockCtx(projectRoot);
+
+    const result = await tool.execute("test-call", { action: "read" }, undefined, undefined, ctx);
+
+    assert.equal(result.details.configured, true);
+    assert.equal(result.details.configPath, configPath);
+    assert.equal(result.details.valid, false);
+    assert.equal(result.content[0].text, "Config validation failed: slots must include at least one entry.");
+  });
+});
+
 test("scheduled_router_config validate reports invalid configs without throwing", async () => {
   const result = await executeValidate(`${BASE_YAML}slots: []\n`);
 
@@ -254,6 +284,84 @@ test("scheduled_router_config save does not write when confirmation UI is unavai
     assert.equal(confirmCalls.length, 0);
     assert.equal(registered.setModelCalls.length, 0);
     assert.equal(existsSync(join(agentDir, CONFIG_FILENAME)), false);
+  });
+});
+
+test("scheduled_router_config save does not write when the user declines the confirmation", async () => {
+  await withTempDirs(async ({ projectRoot, agentDir }) => {
+    const registered = registerExtension();
+    const tool = getScheduledRouterConfigTool(registered);
+    const { ctx, confirmCalls } = mockCtx(projectRoot, { confirmResult: false });
+
+    const result = await tool.execute(
+      "test-call",
+      {
+        action: "save",
+        configYaml: `${BASE_YAML}slots:
+  - from: "09:00"
+    to: "17:00"
+    provider: a
+    model: a
+  - from: "13:00"
+    to: "15:00"
+    provider: b
+    model: b
+`,
+      },
+      undefined,
+      undefined,
+      ctx,
+    );
+
+    assert.equal(result.details.saved, false);
+    assert.equal(result.details.configPath, undefined);
+    assert.equal(result.details.warnings.length, 1);
+    assert.equal(result.details.warnings[0].type, "masked-slot");
+    assert.equal(result.content[0].text, "Config not saved.");
+    assert.equal(confirmCalls.length, 1);
+    assert.equal(confirmCalls[0].title, "Save scheduled router config?");
+    assert.match(confirmCalls[0].body, /Config warnings: slot\[1\] 13:00-15:00 is fully masked/);
+    assert.equal(registered.setModelCalls.length, 0);
+    assert.equal(existsSync(join(agentDir, CONFIG_FILENAME)), false);
+    assert.equal(existsSync(join(projectRoot, ".pi", CONFIG_FILENAME)), false);
+  });
+});
+
+test("scheduled_router_config validate and save reject missing configYaml", async () => {
+  const tool = getScheduledRouterConfigTool();
+
+  for (const action of ["validate", "save"]) {
+    await assert.rejects(
+      () => tool.execute("test-call", { action }, undefined, undefined, {}),
+      { message: "configYaml is required for validate/save." },
+      `${action} should require configYaml`,
+    );
+  }
+});
+
+test("scheduled_router_config save creates a missing project .pi directory", async () => {
+  await withTempDirs(async ({ projectRoot }) => {
+    const registered = registerExtension();
+    const tool = getScheduledRouterConfigTool(registered);
+    const projectConfigDir = join(projectRoot, ".pi");
+    const expectedPath = join(projectConfigDir, CONFIG_FILENAME);
+    const { ctx } = mockCtx(projectRoot, {
+      models: {
+        "cursor/composer-2.5": mockModel("cursor", "composer-2.5"),
+      },
+    });
+
+    // A session start on an unconfigured project pins the project config path even though .pi does not exist yet.
+    await registered.events.get("session_start")({}, ctx);
+    assert.equal(existsSync(projectConfigDir), false);
+
+    const result = await tool.execute("test-call", { action: "save", configYaml: VALID_YAML }, undefined, undefined, ctx);
+
+    assert.equal(result.details.saved, true);
+    assert.equal(result.details.configPath, expectedPath);
+    assert.equal(existsSync(expectedPath), true);
+    assert.match(await readFile(expectedPath, "utf8"), /provider: cursor/);
+    assert.equal(registered.setModelCalls.length, 1);
   });
 });
 
