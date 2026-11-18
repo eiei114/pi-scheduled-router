@@ -34,6 +34,11 @@ export async function selectAndSetModel(
         const success = await pi.setModel(defaultModel);
         if (success) {
           ctx.ui.setStatus(STATUS_KEY, `${config.default.provider}/${config.default.model}`);
+        } else {
+          ctx.ui.notify(
+            `Scheduled router: could not switch to ${config.default.provider}/${config.default.model} (no credentials or model unavailable).`,
+            "warning",
+          );
         }
         return success;
       }
@@ -54,6 +59,11 @@ export async function selectAndSetModel(
   const success = await pi.setModel(model);
   if (success) {
     ctx.ui.setStatus(STATUS_KEY, `${match.provider}/${match.model}`);
+  } else {
+    ctx.ui.notify(
+      `Scheduled router: could not switch to ${match.provider}/${match.model} (no credentials or model unavailable).`,
+      "warning",
+    );
   }
   return success;
 }
