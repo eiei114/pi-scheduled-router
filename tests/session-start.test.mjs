@@ -138,17 +138,49 @@ test("selectAndSetModel notifies and skips when default match model is missing",
   assert.equal(notifications[0].level, "warning");
 });
 
-test("selectAndSetModel does not set status when setModel returns false", async () => {
+test("selectAndSetModel warns once and does not set status when matched setModel returns false", async () => {
   const models = {
     "cursor/composer-2.5": mockModel("cursor", "composer-2.5"),
   };
-  const { ctx, statuses } = mockCtx(models);
-  const { pi } = mockPi(async () => false);
+  const { ctx, notifications, statuses } = mockCtx(models);
+  const { pi, calls } = mockPi(async () => false);
 
   const success = await selectAndSetModel(pi, ctx, CONFIG, at(11, 0));
 
   assert.equal(success, false);
   assert.equal(statuses.has(STATUS_KEY), false);
+  // The matched slot's setModel failure does not fall through to the default model.
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].provider, "cursor");
+  assert.equal(notifications.length, 1);
+  assert.match(
+    notifications[0].msg,
+    /Scheduled router: could not switch to cursor\/composer-2.5 \(no credentials or model unavailable\)\./,
+  );
+  assert.equal(notifications[0].level, "warning");
+});
+
+test("selectAndSetModel warns when fallback default setModel returns false", async () => {
+  const models = {
+    "deepseek/deepseek-v4-pro": mockModel("deepseek", "deepseek-v4-pro"),
+  };
+  const { ctx, notifications, statuses } = mockCtx(models);
+  const { pi, calls } = mockPi(async () => false);
+
+  const success = await selectAndSetModel(pi, ctx, CONFIG, at(11, 0));
+
+  assert.equal(success, false);
+  assert.equal(statuses.has(STATUS_KEY), false);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].provider, "deepseek");
+  // One notice for the missing slot model plus exactly one warning for the failed default switch.
+  assert.equal(notifications.length, 2);
+  assert.match(notifications[0].msg, /model cursor\/composer-2.5 not found, falling back to default/);
+  assert.match(
+    notifications[1].msg,
+    /Scheduled router: could not switch to deepseek\/deepseek-v4-pro \(no credentials or model unavailable\)\./,
+  );
+  assert.equal(notifications[1].level, "warning");
 });
 
 test("clearScheduledRouterStatus removes scheduled-router status entry", () => {

@@ -19,7 +19,7 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 
 ## CI verification
 
-- **Local `npm run ci`:** pass (typecheck, 88 tests, actual Pi SDK smoke, `npm pack --dry-run`).
+- **Local `npm run ci`:** pass (typecheck, 89 tests, actual Pi SDK smoke, `npm pack --dry-run`).
 - **Workflow pinning:** `actions/checkout@v7`, `actions/setup-node@v7`.
 
 ## Test inventory
@@ -28,13 +28,13 @@ Baseline review before the next feature cycle. No router behavior changes in thi
 |------|-------|-------|
 | `tests/config.test.mjs` | 28 | YAML validation, timezone IANA check, slot overlap warnings |
 | `tests/matcher.test.mjs` | 23 | Slot matching, day-spanning, DST boundaries |
-| `tests/session-start.test.mjs` | 7 | Session-start model selection and fallbacks |
+| `tests/session-start.test.mjs` | 8 | Session-start model selection and fallbacks |
 | `tests/status.test.mjs` | 5 | Status formatting and config warnings |
 | `tests/extension-validate.test.mjs` | 12 | Extension hooks, commands, status/configure flows, and config tool operations |
 | `tests/docs-consistency.test.mjs` | 5 | README pin + example config validation + maintenance baseline drift guard |
 | `tests/smoke.test.mjs` | 1 | End-to-end validate + match |
 | `tests/pi-sdk-smoke-contract.test.mjs` | 6 | Actual Pi smoke assertion contract and negative fixtures |
-| **Total** | **88** | **88 pass / 0 fail** |
+| **Total** | **89** | **89 pass / 0 fail** |
 
 ## Edge-case review (gaps)
 
