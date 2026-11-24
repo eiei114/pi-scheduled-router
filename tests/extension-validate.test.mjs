@@ -127,6 +127,60 @@ test("extension registers lifecycle hooks, commands, and the config tool", () =>
   assert.match(tool.description, /Read, validate, or save/);
 });
 
+test("session startup uses one routing instant across an adjacent slot boundary", async () => {
+  await withTempDirs(async ({ projectRoot }) => {
+    await writeProjectConfig(projectRoot, `${BASE_YAML}timezone: UTC
+slots:
+  - from: "10:00"
+    to: "15:00"
+    provider: cursor
+    model: composer-2.5
+  - from: "15:00"
+    to: "24:00"
+    provider: openai-codex
+    model: gpt-5.4
+`);
+    const registered = registerExtension();
+    const before = mockModel("cursor", "composer-2.5");
+    const after = mockModel("openai-codex", "gpt-5.4");
+    const { ctx, notifications, statuses } = mockCtx(projectRoot, {
+      models: { "cursor/composer-2.5": before, "openai-codex/gpt-5.4": after },
+    });
+    const lookups = [];
+    const find = ctx.modelRegistry.find;
+    ctx.modelRegistry.find = (...args) => {
+      lookups.push(args);
+      return find(...args);
+    };
+
+    const RealDate = globalThis.Date;
+    let clockReads = 0;
+    globalThis.Date = new Proxy(RealDate, {
+      construct(target, args, newTarget) {
+        if (args.length === 0) {
+          // The next clock read after recording the startup match crosses 15:00 UTC.
+          args = [clockReads++ === 0 ? "2026-01-01T14:59:59.999Z" : "2026-01-01T15:00:00.000Z"];
+        }
+        return Reflect.construct(target, args, newTarget);
+      },
+    });
+    try {
+      await registered.events.get("session_start")({}, ctx);
+      assert.deepEqual(lookups, [["cursor", "composer-2.5"]]);
+      assert.equal(clockReads, 1, "the recorded match and model lookup share a clock reading");
+      assert.deepEqual(registered.setModelCalls, [before]);
+      assert.equal(statuses.get(STATUS_KEY), "cursor/composer-2.5");
+
+      await registered.commands.get("scheduled:status").handler("", ctx);
+      assert.match(notifications.at(-1).msg, /Matched:\s+slot\[1\].*openai-codex\/gpt-5\.4/);
+      assert.deepEqual(registered.setModelCalls, [before], "preview must not change the active model");
+      assert.equal(statuses.get(STATUS_KEY), "cursor/composer-2.5");
+    } finally {
+      globalThis.Date = RealDate;
+    }
+  });
+});
+
 test("scheduled:status command refreshes and notifies formatted status", async () => {
   await withTempDirs(async ({ projectRoot }) => {
     const configPath = await writeProjectConfig(projectRoot);

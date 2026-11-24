@@ -27,8 +27,9 @@ export default function scheduledRouter(pi: ExtensionAPI) {
   async function trySelectModel(ctx: ExtensionContext): Promise<void> {
     if (!(await ensureConfig(ctx)) || !config) return;
 
-    currentMatch = matchSlot(config);
-    await selectAndSetModel(pi, ctx, config);
+    const routingInstant = new Date();
+    currentMatch = matchSlot(config, routingInstant);
+    await selectAndSetModel(pi, ctx, config, routingInstant);
   }
 
   function clearStatus(ctx: ExtensionContext): void {
