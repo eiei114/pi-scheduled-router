@@ -39,16 +39,11 @@ export default function scheduledRouter(pi: ExtensionAPI) {
     configPath = undefined;
   }
 
-  async function refreshMatch(ctx: ExtensionContext): Promise<void> {
-    if (!(await ensureConfig(ctx)) || !config) {
-      currentMatch = undefined;
-      return;
-    }
-    currentMatch = matchSlot(config);
-  }
-
-  function formatStatus(): string {
-    return formatScheduledRouterStatus({ config, currentMatch, configPath });
+  async function previewStatus(ctx: ExtensionContext): Promise<string> {
+    await ensureConfig(ctx);
+    const now = new Date();
+    currentMatch = matchSlot(config, now);
+    return formatScheduledRouterStatus({ config, currentMatch, configPath, now });
   }
 
   // ── Session lifecycle ──
@@ -66,8 +61,7 @@ export default function scheduledRouter(pi: ExtensionAPI) {
   pi.registerCommand("scheduled:status", {
     description: "Show current scheduled router status (time, matched slot, model)",
     handler: async (_args, ctx) => {
-      await refreshMatch(ctx);
-      ctx.ui.notify(formatStatus(), "info");
+      ctx.ui.notify(await previewStatus(ctx), "info");
     },
   });
 
@@ -96,8 +90,7 @@ export default function scheduledRouter(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       if (params.action === "status") {
-        await refreshMatch(ctx);
-        return textResult(formatStatus());
+        return textResult(await previewStatus(ctx));
       }
 
       if (params.action === "read") {

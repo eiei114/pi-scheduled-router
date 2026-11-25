@@ -230,6 +230,81 @@ test("scheduled_router_config status returns formatted status text", async () =>
   });
 });
 
+for (const [name, preview] of [
+  ["scheduled:status", async (registered, ctx, notifications) => {
+    await registered.commands.get("scheduled:status").handler("", ctx);
+    return notifications.at(-1).msg;
+  }],
+  ["scheduled_router_config status", async (registered, ctx) => {
+    const tool = getScheduledRouterConfigTool(registered);
+    const result = await tool.execute("test-call", { action: "status" }, undefined, undefined, ctx);
+    return result.content[0].text;
+  }],
+]) {
+  test(`${name} previews both sides of a slot boundary with one clock reading per call`, async () => {
+    await withTempDirs(async ({ projectRoot }) => {
+      await writeProjectConfig(projectRoot, `${BASE_YAML}timezone: UTC
+slots:
+  - from: "10:00"
+    to: "15:00"
+    provider: cursor
+    model: composer-2.5
+  - from: "15:00"
+    to: "24:00"
+    provider: openai-codex
+    model: gpt-5.4
+`);
+      const registered = registerExtension();
+      const { ctx, notifications, statuses } = mockCtx(projectRoot, {
+        models: {
+          "cursor/composer-2.5": mockModel("cursor", "composer-2.5"),
+          "openai-codex/gpt-5.4": mockModel("openai-codex", "gpt-5.4"),
+        },
+      });
+      const RealDate = globalThis.Date;
+      let clockReads = 0;
+      globalThis.Date = new Proxy(RealDate, {
+        construct(target, args, newTarget) {
+          if (args.length === 0) {
+            args = [clockReads++ === 0 ? "2026-01-01T14:59:59.999Z" : "2026-01-01T15:00:00.000Z"];
+          }
+          return Reflect.construct(target, args, newTarget);
+        },
+      });
+      try {
+        const before = await preview(registered, ctx, notifications);
+        assert.match(before, /Current time: 2026-01-01 14:59\b/);
+        assert.match(before, /Matched:\s+slot\[0\] 10:00-15:00 → cursor\/composer-2\.5/);
+        assert.equal(clockReads, 1);
+
+        const after = await preview(registered, ctx, notifications);
+        assert.match(after, /Current time: 2026-01-01 15:00\b/);
+        assert.match(after, /Matched:\s+slot\[1\] 15:00-24:00 → openai-codex\/gpt-5\.4/);
+        assert.equal(clockReads, 2);
+        assert.deepEqual(registered.setModelCalls, []);
+        assert.equal(statuses.size, 0);
+      } finally {
+        globalThis.Date = RealDate;
+      }
+    });
+  });
+
+  test(`${name} still reports unevaluated status when unconfigured`, async () => {
+    await withTempDirs(async ({ projectRoot }) => {
+      const registered = registerExtension();
+      const { ctx, notifications } = mockCtx(projectRoot);
+
+      const status = await preview(registered, ctx, notifications);
+
+      assert.match(status, /Current time:/);
+      assert.match(status, /Status:\s+not evaluated \(config not loaded\)/);
+      assert.match(status, /Config:\s+.*scheduled-router\.yaml/);
+      assert.doesNotMatch(status, /Matched:/);
+      assert.deepEqual(registered.setModelCalls, []);
+    });
+  });
+}
+
 test("scheduled_router_config read reports an unconfigured project", async () => {
   await withTempDirs(async ({ projectRoot }) => {
     const tool = getScheduledRouterConfigTool();
