@@ -36,6 +36,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Reject the empty `24:00`–`00:00` slot during configuration validation.
+
 ## [0.1.12] - 2026-09-30
 
 ### Changed

@@ -124,6 +124,11 @@ function validateSlots(value: unknown): TimeSlot[] {
         `slots[${index}] has zero duration: from and to are both "${from}". Use a non-empty time range.`,
       );
     }
+    if (from === "24:00" && to === "00:00") {
+      throw new Error(
+        `slots[${index}] has zero duration: "24:00" to "00:00" contains no minutes. Use a non-empty time range.`,
+      );
+    }
     return {
       from,
       to,

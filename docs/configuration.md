@@ -50,7 +50,7 @@ Each slot is an object with four required fields:
 
 - Hours are `00`–`24`; minutes are `00`–`59`.
 - `24:00` is allowed and means end-of-day. When the hour is `24`, minutes must be `00` (`24:01`–`24:59` are invalid).
-- Each slot must have non-zero duration: `from` and `to` cannot be equal.
+- Each slot must have non-zero duration. Equal endpoints and `24:00`–`00:00` are rejected; the latter contains no wall-clock minutes. The reverse range, `00:00`–`24:00`, covers the full day, and `23:00`–`24:00` is a valid end-of-day slot.
 
 ### Inclusive `from`, exclusive `to`
 
