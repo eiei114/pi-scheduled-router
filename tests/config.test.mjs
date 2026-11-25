@@ -139,6 +139,24 @@ test("validateConfig rejects zero-duration slot", () => {
   );
 });
 
+test("validateConfig rejects 24:00 to 00:00 as zero duration", () => {
+  assert.throws(
+    () =>
+      validateConfig({
+        ...VALID_CONFIG,
+        slots: [...VALID_CONFIG.slots, { from: "24:00", to: "00:00", provider: "x", model: "y" }],
+      }),
+    /slots\[2\] has zero duration/,
+  );
+});
+
+test("validateConfig accepts full-day, end-of-day, and overnight slots", () => {
+  for (const [from, to] of [["00:00", "24:00"], ["23:00", "24:00"], ["22:00", "02:00"]]) {
+    const slots = [{ from, to, provider: "x", model: "y" }];
+    assert.deepEqual(validateConfig({ ...VALID_CONFIG, slots }).slots, slots, `${from} to ${to}`);
+  }
+});
+
 test("validateConfig rejects unknown top-level keys", () => {
   assert.throws(
     () => validateConfig({ ...VALID_CONFIG, typo: "oops" }),
